@@ -2,6 +2,8 @@
 ### Programming II Project | University Antonine
 
 ---
+<img width="1885" height="909" alt="image" src="https://github.com/user-attachments/assets/4b8794cc-c39d-4806-b13a-74cd3cadc8ac" />
+
 
 ## 🚀 Features
 
@@ -183,3 +185,5 @@ Donations are **sorted by amount (ascending), then date** using Merge Sort O(n l
 ---
 
 *Good Luck at the Defense! 🎓*
+
+
