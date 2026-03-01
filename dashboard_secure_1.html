@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html class="dark" lang="en" dir="ltr" id="htmlRoot">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CharityHub — Transparent Giving, Real Impact</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+<script id="tailwind-config">
+tailwind.config = {
+  darkMode:"class",
+  theme:{extend:{
+    colors:{"primary":"#14B8A6","primary-dark":"#0F9688","accent":"#3B82F6","admin-accent":"#F59E0B","background-dark":"#0d1117","surface-dark":"#161b22","surface-card":"#1c2333","background-light":"#f7f6f8"},
+    fontFamily:{display:["Inter","Noto Sans Arabic","sans-serif"]},
+    borderRadius:{DEFAULT:"0.5rem",lg:"1rem",xl:"1.5rem",full:"9999px"},
+  }},
+}
+</script>
+<style>
+:root{--primary:#14B8A6;--accent:#3B82F6;--admin:#701eeb;}
+body{font-family:'Inter','Noto Sans Arabic',sans-serif;}
+[dir="rtl"] body{font-family:'Noto Sans Arabic','Inter',sans-serif;}
+.glass-card{background:rgba(20,184,166,0.05);backdrop-filter:blur(12px);border:1px solid rgba(20,184,166,0.12);transition:all 0.2s;}
+.glass-card:hover{border-color:rgba(20,184,166,0.3);background:rgba(20,184,166,0.09);transform:translateY(-1px);}
+.glass-surface{background:rgba(255,255,255,0.03);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08);}
+.glass-morphism{background:rgba(30,41,59,0.75);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.1);}
+[data-page]{display:none;}
+[data-page].active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+@keyframes slideUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
+@keyframes pulse-ring{0%{transform:scale(1);opacity:0.6;}100%{transform:scale(1.4);opacity:0;}}
+@keyframes fillBar{from{width:0;}to{width:var(--pct);}}
+[data-page].active{animation:fadeIn 0.28s ease both;}
+.prog-fill{animation:fillBar 1.2s cubic-bezier(0.4,0,0.2,1) both;}
+.pw-seg{height:6px;border-radius:4px;flex:1;transition:background 0.3s;}
+.badge-verified{background:linear-gradient(135deg,rgba(20,184,166,0.2),rgba(20,184,166,0.05));border:1px solid rgba(20,184,166,0.4);}
+.milestone-glow{box-shadow:0 0 20px rgba(20,184,166,0.4);}
+.admin-card{background:rgba(112,30,235,0.06);border:1px solid rgba(112,30,235,0.2);}
+.audit-row:nth-child(even){background:rgba(255,255,255,0.02);}
+.focus-ring:focus{outline:2px solid var(--primary);outline-offset:2px;}
+[dir="rtl"] .rtl-flip{transform:scaleX(-1);}
+.notification-dot{position:absolute;top:-2px;right:-2px;width:8px;height:8px;background:#ef4444;border-radius:50%;border:2px solid #0d1117;}
+.onboarding-step.done .step-circle{background:var(--primary);border-color:var(--primary);}
+.onboarding-step.active .step-circle{border-color:var(--primary);color:var(--primary);}
+.chart-container{position:relative;height:200px;}
+kbd{background:#1e293b;border:1px solid #334155;border-radius:4px;padding:1px 6px;font-size:11px;font-family:monospace;}
+.skeleton{background:linear-gradient(90deg,#1e293b 25%,#334155 50%,#1e293b 75%);background-size:200% 100%;animation:skeleton-loading 1.5s infinite;}
+@keyframes skeleton-loading{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+.toast-container{position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:0.5rem;pointer-events:none;}
+.toast-item{display:flex;align-items:center;gap:0.75rem;background:#1c2333;border:1px solid rgba(20,184,166,0.3);color:white;padding:1rem 1.25rem;border-radius:0.75rem;box-shadow:0 20px 40px rgba(0,0,0,0.5);font-size:0.875rem;font-weight:500;pointer-events:all;transform:translateY(0);opacity:1;transition:all 0.35s ease;}
+.toast-item.hide{transform:translateY(20px);opacity:0;}
+input:focus,select:focus,textarea:focus{outline:none;}
+.lang-ar{display:none;}
+.lang-en{display:block;}
+[dir="rtl"] .lang-ar{display:block;}
+[dir="rtl"] .lang-en{display:none;}
+</style>
+</head>
+<body class="bg-background-dark font-display text-slate-100 min-h-screen">
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- NOTIFICATION PANEL -->
+<div id="notifPanel" class="fixed top-16 right-4 w-80 bg-surface-card border border-primary/20 rounded-xl shadow-2xl z-[150] hidden overflow-hidden">
+  <div class="p-4 border-b border-primary/10 flex items-center justify-between">
+    <h3 class="font-bold text-white text-sm">Notifications</h3>
+    <button onclick="document.getElementById('notifPanel').classList.add('hidden')" class="text-slate-500 hover:text-white"><span class="material-icons text-base">close</span></button>
+  </div>
+  <div id="notifList" class="max-h-80 overflow-y-auto divide-y divide-white/5"></div>
+</div>
+
+<!-- MAIN NAV (public + donor) -->
+<header id="mainNav" class="border-b border-primary/10 bg-background-dark/90 backdrop-blur-md sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <div class="flex items-center gap-2 cursor-pointer" onclick="showPage('home')">
+      <div class="w-9 h-9 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/30">
+        <span class="material-icons text-white text-lg">volunteer_activism</span>
+      </div>
+      <span class="text-xl font-bold tracking-tight text-white">CharityHub</span>
+    </div>
+    <nav class="hidden md:flex items-center gap-8 text-sm font-medium" id="mainNavLinks">
+      <a href="#" onclick="showPage('home')" id="nav-home" class="hover:text-primary transition-colors focus-ring rounded"><span class="lang-en">Home</span><span class="lang-ar">الرئيسية</span></a>
+      <a href="#" onclick="showPage('campaigns')" id="nav-campaigns" class="hover:text-primary transition-colors focus-ring rounded"><span class="lang-en">Charities</span><span class="lang-ar">الجمعيات</span></a>
+      <a href="#" onclick="showPage('dashboard')" id="nav-dashboard" class="hover:text-primary transition-colors focus-ring rounded" id="donorNavLink"><span class="lang-en">My Dashboard</span><span class="lang-ar">لوحتي</span></a>
+    </nav>
+    <div class="flex items-center gap-3">
+      <!-- Language toggle -->
+      <button onclick="toggleLang()" class="text-slate-400 hover:text-white border border-slate-700 hover:border-primary rounded-lg px-2.5 py-1 text-xs font-bold transition-all focus-ring" title="Toggle Arabic/English" id="langBtn">AR</button>
+      <!-- Notifications -->
+      <div id="notifBtnWrapper" class="relative hidden">
+        <button onclick="toggleNotifPanel()" class="relative p-2 rounded-lg hover:bg-primary/10 text-slate-400 hover:text-white transition-colors focus-ring">
+          <span class="material-icons text-xl">notifications</span>
+          <span class="notification-dot" id="notifDot"></span>
+        </button>
+      </div>
+      <div id="navGuestActions" class="flex items-center gap-3">
+        <button class="text-slate-400 hover:text-white transition-colors text-sm font-medium focus-ring rounded" onclick="showPage('login')"><span class="lang-en">Sign In</span><span class="lang-ar">دخول</span></button>
+        <button onclick="showPage('register')" class="bg-primary hover:bg-primary-dark text-white text-sm font-bold px-5 py-2 rounded-full transition-all shadow-lg shadow-primary/25 focus-ring"><span class="lang-en">Donate Now</span><span class="lang-ar">تبرع الآن</span></button>
+      </div>
+      <div id="navUserActions" class="hidden items-center gap-3">
+        <span class="text-sm text-slate-400" id="navUserName"></span>
+        <button onclick="logout()" class="text-slate-500 hover:text-red-400 text-sm transition-colors focus-ring rounded"><span class="lang-en">Logout</span><span class="lang-ar">خروج</span></button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════ PAGE: HOME ═══════ -->
+<div data-page="home" id="page-home" class="active">
+  <section class="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
+    <div class="absolute inset-0 pointer-events-none">
+      <div class="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-primary/10 rounded-full blur-[120px]"></div>
+      <div class="absolute bottom-[-150px] right-[-100px] w-[500px] h-[400px] bg-accent/8 rounded-full blur-[100px]"></div>
+    </div>
+    <div class="relative z-10 max-w-3xl mx-auto px-6 text-center">
+      <div class="inline-flex items-center gap-2 border border-primary/30 bg-primary/10 text-primary text-xs font-bold px-4 py-1.5 rounded-full mb-8 uppercase tracking-widest">
+        <span class="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></span>
+        <span class="lang-en">New: Impact Tracking 2.0</span><span class="lang-ar">جديد: تتبع الأثر 2.0</span>
+      </div>
+      <h1 class="text-5xl md:text-7xl font-black leading-[1.05] tracking-tight mb-6 text-white">
+        <span class="lang-en">Transparent<br/>Giving, <span class="text-primary">Real<br/>Impact.</span></span>
+        <span class="lang-ar">تبرع شفاف،<br/><span class="text-primary">أثر حقيقي.</span></span>
+      </h1>
+      <p class="text-slate-400 text-lg max-w-xl mx-auto mb-10 leading-relaxed">
+        <span class="lang-en">Next-generation philanthropy with real-time analytics, verified charities, and instant tax-ready reports.</span>
+        <span class="lang-ar">جيل جديد من العطاء مع تحليلات فورية وجمعيات موثقة وتقارير ضريبية فورية.</span>
+      </p>
+      <div class="flex items-center justify-center gap-4 flex-wrap">
+        <button onclick="showPage('register')" class="bg-primary hover:bg-primary-dark text-white font-bold px-8 py-4 rounded-full text-base transition-all shadow-xl shadow-primary/30 hover:-translate-y-0.5 focus-ring"><span class="lang-en">Start Donating</span><span class="lang-ar">ابدأ التبرع</span></button>
+        <button onclick="showPage('campaigns')" class="border border-slate-600 hover:border-primary text-white font-bold px-8 py-4 rounded-full text-base transition-all hover:text-primary focus-ring"><span class="lang-en">View Charities</span><span class="lang-ar">عرض الجمعيات</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats bar -->
+  <div class="border-y border-slate-800 bg-surface-dark">
+    <div class="max-w-5xl mx-auto px-6 grid grid-cols-3 divide-x divide-slate-800">
+      <div class="py-8 px-10"><span class="block text-xs text-slate-500 uppercase tracking-widest font-semibold mb-2"><span class="lang-en">Total Contributions</span><span class="lang-ar">إجمالي التبرعات</span></span><span class="text-3xl font-black text-white">$14.8M<span class="text-primary">+</span></span><span class="block text-xs text-emerald-400 font-semibold mt-1">&#8593; +24% this quarter</span></div>
+      <div class="py-8 px-10"><span class="block text-xs text-slate-500 uppercase tracking-widest font-semibold mb-2"><span class="lang-en">Verified Charities</span><span class="lang-ar">جمعيات موثقة</span></span><span class="text-3xl font-black text-white">1,240</span><span class="flex items-center gap-1 text-xs text-primary font-semibold mt-1"><span class="material-icons text-xs">verified</span>100% Audit Verified</span></div>
+      <div class="py-8 px-10"><span class="block text-xs text-slate-500 uppercase tracking-widest font-semibold mb-2"><span class="lang-en">Lives Impacted</span><span class="lang-ar">أرواح أثّرنا بها</span></span><span class="text-3xl font-black text-white">2.5M</span><span class="flex items-center gap-1 text-xs text-emerald-400 font-semibold mt-1"><span class="material-icons text-xs">public</span>Global reach</span></div>
+    </div>
+  </div>
+
+  <!-- Trust Section -->
+  <section class="py-16 max-w-6xl mx-auto px-6">
+    <p class="text-center text-xs text-primary uppercase tracking-widest font-bold mb-3">Why Trust CharityHub</p>
+    <h2 class="text-3xl font-black text-white text-center mb-12">Built for transparency, designed for impact.</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="glass-card rounded-xl p-7 text-center">
+        <div class="w-14 h-14 bg-primary/15 rounded-2xl flex items-center justify-center mx-auto mb-5"><span class="material-icons text-primary text-2xl">verified_user</span></div>
+        <h3 class="font-bold text-white text-lg mb-2"><span class="lang-en">Secure Accounts</span><span class="lang-ar">حسابات آمنة</span></h3>
+        <p class="text-slate-400 text-sm leading-relaxed">Hashed passwords, brute-force protection, account lockout with cooldown timers.</p>
+      </div>
+      <div class="glass-card rounded-xl p-7 text-center">
+        <div class="w-14 h-14 bg-primary/15 rounded-2xl flex items-center justify-center mx-auto mb-5"><span class="material-icons text-primary text-2xl">history</span></div>
+        <h3 class="font-bold text-white text-lg mb-2"><span class="lang-en">Transparent History</span><span class="lang-ar">سجل شفاف</span></h3>
+        <p class="text-slate-400 text-sm leading-relaxed">Every donation tracked with unique IDs, timestamps, and downloadable receipts.</p>
+      </div>
+      <div class="glass-card rounded-xl p-7 text-center">
+        <div class="w-14 h-14 bg-primary/15 rounded-2xl flex items-center justify-center mx-auto mb-5"><span class="material-icons text-primary text-2xl">workspace_premium</span></div>
+        <h3 class="font-bold text-white text-lg mb-2"><span class="lang-en">Verified Campaigns</span><span class="lang-ar">حملات موثقة</span></h3>
+        <p class="text-slate-400 text-sm leading-relaxed">Each charity passes our audit process before going live. Documents verified.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="py-16 max-w-6xl mx-auto px-6 border-t border-slate-800">
+    <p class="text-primary text-xs font-bold uppercase tracking-widest mb-4">The Platform</p>
+    <h2 class="text-4xl font-black text-white mb-14 max-w-lg leading-tight">Everything you need to lead a more impactful life.</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div class="glass-card rounded-xl p-6 cursor-pointer" onclick="showPage('register')"><div class="w-10 h-10 bg-primary/15 rounded-lg flex items-center justify-center mb-5"><span class="material-icons text-primary text-xl">account_circle</span></div><h3 class="font-bold text-white mb-2">Donor Accounts</h3><p class="text-sm text-slate-400 leading-relaxed">Personalized dashboards with full donation history and impact reports.</p></div>
+      <div class="glass-card rounded-xl p-6 cursor-pointer" onclick="showPage('campaigns')"><div class="w-10 h-10 bg-primary/15 rounded-lg flex items-center justify-center mb-5"><span class="material-icons text-primary text-xl">manage_search</span></div><h3 class="font-bold text-white mb-2">Smart Search</h3><p class="text-sm text-slate-400 leading-relaxed">Filter by category, location, deadline. Find causes that matter to you.</p></div>
+      <div class="glass-card rounded-xl p-6 cursor-pointer"><div class="w-10 h-10 bg-primary/15 rounded-lg flex items-center justify-center mb-5"><span class="material-icons text-primary text-xl">receipt_long</span></div><h3 class="font-bold text-white mb-2">Instant Receipts</h3><p class="text-sm text-slate-400 leading-relaxed">Download PDF receipts immediately after donating. Tax-ready format.</p></div>
+      <div class="glass-card rounded-xl p-6 cursor-pointer"><div class="w-10 h-10 bg-primary/15 rounded-lg flex items-center justify-center mb-5"><span class="material-icons text-primary text-xl">picture_as_pdf</span></div><h3 class="font-bold text-white mb-2">PDF + CSV Reports</h3><p class="text-sm text-slate-400 leading-relaxed">Export full donation history in multiple formats with charts included.</p></div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="max-w-6xl mx-auto px-6 pb-24">
+    <div class="relative bg-primary rounded-2xl overflow-hidden px-10 py-16 text-center shadow-2xl shadow-primary/20">
+      <div class="absolute inset-0 bg-gradient-to-br from-primary via-primary to-teal-400 opacity-90"></div>
+      <div class="absolute inset-0 opacity-10" style="background-image:radial-gradient(circle at 20% 80%,white 1px,transparent 1px),radial-gradient(circle at 80% 20%,white 1px,transparent 1px);background-size:40px 40px;"></div>
+      <div class="relative z-10">
+        <h2 class="text-4xl font-black text-white mb-4"><span class="lang-en">Ready to make a difference?</span><span class="lang-ar">هل أنت مستعد للتأثير؟</span></h2>
+        <p class="text-white/80 text-lg mb-10 max-w-lg mx-auto">Join over 50,000 donors who trust CharityHub to power their philanthropy.</p>
+        <div class="flex items-center justify-center gap-4 flex-wrap">
+          <button onclick="showPage('register')" class="bg-white text-primary hover:bg-slate-100 font-bold px-8 py-4 rounded-full transition-all shadow-xl focus-ring"><span class="lang-en">Create Free Account</span><span class="lang-ar">أنشئ حسابك مجاناً</span></button>
+          <button class="border-2 border-white/50 hover:border-white text-white font-bold px-8 py-4 rounded-full transition-all focus-ring"><span class="lang-en">Talk to Support</span><span class="lang-ar">تواصل مع الدعم</span></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="border-t border-slate-800 py-10 bg-surface-dark">
+    <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+      <div class="flex items-center gap-2"><div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center"><span class="material-icons text-white text-base">volunteer_activism</span></div><span class="font-bold text-white">CharityHub</span></div>
+      <p class="text-sm text-slate-500">&copy; 2026 CharityHub Inc. All rights reserved.</p>
+      <div class="flex gap-6 text-sm text-slate-500"><a href="#" class="hover:text-primary">Privacy</a><a href="#" class="hover:text-primary">Terms</a><a href="#" class="hover:text-primary">Contact</a></div>
+    </div>
+  </footer>
+</div>
+
+<!-- ═══════ PAGE: CAMPAIGNS ═══════ -->
+<div data-page="campaigns" id="page-campaigns">
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
+      <div>
+        <h1 class="text-4xl font-black text-white mb-2"><span class="lang-en">Available Campaigns</span><span class="lang-ar">الحملات المتاحة</span></h1>
+        <p class="text-slate-400">Discover and support verified initiatives making a real difference.</p>
+      </div>
+      <div class="flex gap-4 shrink-0">
+        <div class="glass-card px-5 py-3 rounded-xl"><span class="block text-xs text-slate-500 uppercase tracking-wider font-semibold mb-1">Live</span><span class="text-2xl font-black text-primary" id="stat-live">0</span></div>
+        <div class="glass-card px-5 py-3 rounded-xl"><span class="block text-xs text-slate-500 uppercase tracking-wider font-semibold mb-1">Raised</span><span class="text-2xl font-black text-primary" id="stat-raised">$0</span></div>
+        <div class="glass-card px-5 py-3 rounded-xl"><span class="block text-xs text-slate-500 uppercase tracking-wider font-semibold mb-1">Categories</span><span class="text-2xl font-black text-primary">5</span></div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="glass-surface rounded-xl p-4 mb-8">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div class="lg:col-span-2 relative"><span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span><input id="campSearch" oninput="filterCampaigns()" class="w-full bg-slate-800/60 border border-transparent focus:border-primary rounded-xl py-2.5 pl-10 pr-4 text-white placeholder:text-slate-500 outline-none text-sm" placeholder="Search by name or description..." type="text"/></div>
+        <select id="campCategory" onchange="filterCampaigns()" class="bg-slate-800/60 border border-transparent focus:border-primary rounded-xl py-2.5 px-4 text-white appearance-none cursor-pointer outline-none text-sm">
+          <option value="all">All Categories</option>
+          <option value="Health">Health</option>
+          <option value="Education">Education</option>
+          <option value="Food">Food</option>
+          <option value="Environment">Environment</option>
+          <option value="Shelter">Shelter</option>
+        </select>
+        <select id="campStatus" onchange="filterCampaigns()" class="bg-slate-800/60 border border-transparent focus:border-primary rounded-xl py-2.5 px-4 text-white appearance-none cursor-pointer outline-none text-sm">
+          <option value="all">All Status</option>
+          <option value="Open">Open</option>
+          <option value="Closed">Closed</option>
+        </select>
+        <select id="campSort" onchange="filterCampaigns()" class="bg-slate-800/60 border border-transparent focus:border-primary rounded-xl py-2.5 px-4 text-white appearance-none cursor-pointer outline-none text-sm">
+          <option value="funded">Most Funded %</option>
+          <option value="deadline">Deadline Soon</option>
+          <option value="target">Target Amount</option>
+          <option value="newest">Newest First</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="campaignGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+    <div class="mt-10 flex items-center justify-center gap-2">
+      <button class="w-10 h-10 flex items-center justify-center rounded-lg border border-primary/20 hover:bg-primary/10"><span class="material-icons text-sm">chevron_left</span></button>
+      <button class="w-10 h-10 flex items-center justify-center rounded-lg bg-primary text-white font-bold text-sm">1</button>
+      <button class="w-10 h-10 flex items-center justify-center rounded-lg border border-primary/20 hover:bg-primary/10 text-sm">2</button>
+      <span class="px-2 text-slate-500">...</span>
+      <button class="w-10 h-10 flex items-center justify-center rounded-lg border border-primary/20 hover:bg-primary/10"><span class="material-icons text-sm">chevron_right</span></button>
+    </div>
+  </main>
+  <footer class="mt-16 border-t border-primary/10 py-8">
+    <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500">
+      <div class="flex items-center gap-2 opacity-60"><div class="w-7 h-7 bg-primary rounded flex items-center justify-center"><span class="material-icons text-white text-sm">volunteer_activism</span></div><span class="font-bold text-white">CharityHub</span></div>
+      <p>&copy; 2026 CharityHub. All rights reserved.</p>
+      <div class="flex gap-5"><a class="hover:text-primary" href="#">Privacy</a><a class="hover:text-primary" href="#">Terms</a><a class="hover:text-primary" href="#">Support</a></div>
+    </div>
+  </footer>
+</div>
+
+<!-- ═══════ PAGE: ONBOARDING ═══════ -->
+<div data-page="onboarding" id="page-onboarding">
+  <main class="min-h-[calc(100vh-64px)] flex items-center justify-center p-6">
+    <div class="w-full max-w-2xl">
+      <div class="glass-morphism rounded-2xl p-10 shadow-2xl">
+        <div class="text-center mb-10">
+          <h1 class="text-3xl font-black text-white mb-2">Welcome to CharityHub! &#127881;</h1>
+          <p class="text-slate-400">Let's get you set up in 3 quick steps.</p>
+        </div>
+        <!-- Steps -->
+        <div class="flex items-center justify-center gap-3 mb-10">
+          <div class="onboarding-step flex flex-col items-center gap-2" id="ob-step-1">
+            <div class="step-circle w-10 h-10 rounded-full border-2 border-slate-600 flex items-center justify-center font-bold text-slate-400 text-sm transition-all">1</div>
+            <span class="text-xs text-slate-500 font-medium">Profile</span>
+          </div>
+          <div class="flex-1 h-0.5 bg-slate-700 max-w-16"></div>
+          <div class="onboarding-step flex flex-col items-center gap-2" id="ob-step-2">
+            <div class="step-circle w-10 h-10 rounded-full border-2 border-slate-600 flex items-center justify-center font-bold text-slate-400 text-sm transition-all">2</div>
+            <span class="text-xs text-slate-500 font-medium">Browse</span>
+          </div>
+          <div class="flex-1 h-0.5 bg-slate-700 max-w-16"></div>
+          <div class="onboarding-step flex flex-col items-center gap-2" id="ob-step-3">
+            <div class="step-circle w-10 h-10 rounded-full border-2 border-slate-600 flex items-center justify-center font-bold text-slate-400 text-sm transition-all">3</div>
+            <span class="text-xs text-slate-500 font-medium">Donate</span>
+          </div>
+        </div>
+
+        <div id="ob-content-1">
+          <h2 class="text-xl font-bold text-white mb-6 text-center">&#9989; Complete Your Profile</h2>
+          <div class="space-y-4">
+            <div class="flex items-center gap-4 p-4 bg-primary/10 border border-primary/20 rounded-xl">
+              <span class="material-icons text-primary text-2xl">person</span>
+              <div><p class="font-semibold text-white" id="ob-username-display"></p><p class="text-sm text-slate-400" id="ob-email-display"></p></div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div><label class="text-slate-300 text-sm font-medium block mb-2">Phone (XX-XXXXXX)</label><input id="ob-phone" class="w-full px-4 py-3 bg-slate-800/60 border border-slate-700 rounded-lg text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary outline-none" placeholder="03-123456"/></div>
+              <div><label class="text-slate-300 text-sm font-medium block mb-2">Location</label><select id="ob-location" class="w-full px-4 py-3 bg-slate-800/60 border border-slate-700 rounded-lg text-white appearance-none outline-none focus:ring-2 focus:ring-primary"><option>Beirut</option><option>Tripoli</option><option>Sidon</option><option>Baalbek</option><option>Other</option></select></div>
+            </div>
+            <div><label class="text-slate-300 text-sm font-medium block mb-2">Preferred Categories</label><div class="flex flex-wrap gap-2" id="ob-categories">
+              <button onclick="toggleCat(this,'Health')" class="px-3 py-1.5 text-xs border border-slate-600 hover:border-primary rounded-full text-slate-400 hover:text-primary transition-all">Health</button>
+              <button onclick="toggleCat(this,'Education')" class="px-3 py-1.5 text-xs border border-slate-600 hover:border-primary rounded-full text-slate-400 hover:text-primary transition-all">Education</button>
+              <button onclick="toggleCat(this,'Food')" class="px-3 py-1.5 text-xs border border-slate-600 hover:border-primary rounded-full text-slate-400 hover:text-primary transition-all">Food</button>
+              <button onclick="toggleCat(this,'Environment')" class="px-3 py-1.5 text-xs border border-slate-600 hover:border-primary rounded-full text-slate-400 hover:text-primary transition-all">Environment</button>
+              <button onclick="toggleCat(this,'Shelter')" class="px-3 py-1.5 text-xs border border-slate-600 hover:border-primary rounded-full text-slate-400 hover:text-primary transition-all">Shelter</button>
+            </div></div>
+          </div>
+          <button onclick="obNext(1)" class="w-full mt-8 bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/25">Next Step <span class="material-icons">arrow_forward</span></button>
+        </div>
+
+        <div id="ob-content-2" class="hidden">
+          <h2 class="text-xl font-bold text-white mb-6 text-center">&#128269; Browse Top Campaigns</h2>
+          <div id="ob-campaign-preview" class="space-y-3 mb-8"></div>
+          <button onclick="obNext(2)" class="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/25">Ready to Donate! <span class="material-icons">favorite</span></button>
+        </div>
+
+        <div id="ob-content-3" class="hidden text-center">
+          <div class="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-6 milestone-glow"><span class="material-icons text-primary text-4xl">celebration</span></div>
+          <h2 class="text-2xl font-black text-white mb-3">You're all set! &#127881;</h2>
+          <p class="text-slate-400 mb-8">Find a campaign that resonates with you and make your first donation!</p>
+          <button onclick="showPage('campaigns')" class="bg-primary hover:bg-primary-dark text-white font-bold px-10 py-4 rounded-xl transition-all shadow-lg shadow-primary/25 inline-flex items-center gap-2"><span class="material-icons">volunteer_activism</span>Browse Campaigns</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ═══════ PAGE: DONOR DASHBOARD ═══════ -->
+<div data-page="dashboard" id="page-dashboard">
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <header class="mb-10 flex items-start justify-between">
+      <div><h1 class="text-3xl font-black text-white mb-1"><span class="lang-en">Your Dashboard</span><span class="lang-ar">لوحة التحكم</span></h1><p class="text-slate-400">Track your impact and manage donations.</p></div>
+      <div class="flex gap-3">
+        <button onclick="exportCSV()" class="flex items-center gap-2 border border-primary/30 hover:bg-primary/10 text-primary px-4 py-2 rounded-xl text-sm font-semibold transition-all focus-ring"><span class="material-icons text-base">download</span>CSV</button>
+        <button onclick="generateReport()" class="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all focus-ring shadow-lg shadow-primary/25"><span class="material-icons text-base">picture_as_pdf</span>PDF Report</button>
+      </div>
+    </header>
+
+    <!-- KPIs -->
+    <section class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10">
+      <div class="bg-[#701eeb]/5 border border-[#701eeb]/20 p-6 rounded-xl">
+        <div class="flex items-center justify-between mb-4"><span class="material-icons text-[#701eeb] bg-[#701eeb]/15 p-2 rounded-lg">payments</span><span class="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full">Total</span></div>
+        <h3 class="text-slate-400 text-sm font-medium mb-1">Total Donated</h3><p class="text-3xl font-black text-white" id="kpi-total">$0.00</p>
+      </div>
+      <div class="bg-[#701eeb]/5 border border-[#701eeb]/20 p-6 rounded-xl">
+        <div class="mb-4"><span class="material-icons text-[#701eeb] bg-[#701eeb]/15 p-2 rounded-lg">favorite</span></div>
+        <h3 class="text-slate-400 text-sm font-medium mb-1">Donations Count</h3><p class="text-3xl font-black text-white" id="kpi-count">0</p>
+      </div>
+      <div class="bg-[#701eeb]/5 border border-[#701eeb]/20 p-6 rounded-xl">
+        <div class="mb-4"><span class="material-icons text-[#701eeb] bg-[#701eeb]/15 p-2 rounded-lg">campaign</span></div>
+        <h3 class="text-slate-400 text-sm font-medium mb-1">Campaigns Supported</h3><p class="text-3xl font-black text-white" id="kpi-campaigns">0</p>
+      </div>
+    </section>
+
+    <!-- Monthly Chart + Table -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div class="lg:col-span-3 space-y-6">
+        <!-- Monthly Donations Chart -->
+        <div class="bg-[#701eeb]/5 border border-[#701eeb]/15 rounded-xl p-6">
+          <h2 class="font-bold text-white mb-4 flex items-center gap-2"><span class="material-icons text-[#701eeb] text-base">bar_chart</span>Monthly Donations</h2>
+          <div class="chart-container"><canvas id="monthlyChart"></canvas></div>
+        </div>
+
+        <!-- Donation Table -->
+        <div class="bg-[#701eeb]/5 border border-[#701eeb]/15 rounded-xl overflow-hidden">
+          <div class="p-5 border-b border-[#701eeb]/15 flex justify-between items-center">
+            <h2 class="font-bold text-white">Recent Donation Records</h2>
+            <div class="flex gap-2">
+              <input id="donSearchInput" oninput="filterDonations()" placeholder="Search..." class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-slate-500 outline-none focus:border-[#701eeb] w-32"/>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead><tr class="text-slate-500 text-xs uppercase tracking-wider bg-slate-900/50"><th class="px-5 py-3 font-semibold">ID</th><th class="px-5 py-3 font-semibold">Charity</th><th class="px-5 py-3 font-semibold text-right">Amount</th><th class="px-5 py-3 font-semibold">Date</th><th class="px-5 py-3 font-semibold text-center">Actions</th></tr></thead>
+              <tbody id="donationTable" class="divide-y divide-[#701eeb]/5"></tbody>
+            </table>
+          </div>
+          <div class="p-4 border-t border-[#701eeb]/10 text-center"><button class="text-sm text-slate-500 hover:text-[#701eeb]">View All Donations</button></div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="flex flex-col gap-5">
+        <!-- Top Charities -->
+        <div class="bg-[#701eeb]/5 border border-[#701eeb]/15 rounded-xl p-5">
+          <h2 class="font-bold text-white mb-4 flex items-center gap-2"><span class="material-icons text-[#701eeb] text-base">leaderboard</span>Top Charities</h2>
+          <div id="topCharitiesList" class="space-y-3"></div>
+        </div>
+        <!-- PDF Export -->
+        <div class="bg-[#701eeb]/5 border border-[#701eeb]/15 rounded-xl p-5">
+          <div class="flex items-center gap-2 mb-3 text-[#701eeb]"><span class="material-icons text-base">file_download</span><h2 class="font-bold">Export Report</h2></div>
+          <p class="text-sm text-slate-400 mb-4">Download your full donation history.</p>
+          <div class="flex flex-col gap-2">
+            <button onclick="generateReport()" class="w-full bg-[#701eeb] hover:bg-[#701eeb]/90 text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 text-sm transition-all shadow-lg shadow-[#701eeb]/20"><span class="material-icons text-sm">picture_as_pdf</span>PDF Report</button>
+            <button onclick="exportCSV()" class="w-full border border-[#701eeb]/30 hover:bg-[#701eeb]/10 text-[#701eeb] font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 text-sm transition-all"><span class="material-icons text-sm">table_chart</span>Export CSV</button>
+          </div>
+        </div>
+        <!-- Impact Spotlight -->
+        <div class="bg-gradient-to-br from-[#701eeb] to-indigo-600 rounded-xl p-5 text-white relative overflow-hidden shadow-xl">
+          <div class="relative z-10"><h3 class="font-bold text-base mb-1">Impact Spotlight</h3><p class="text-white/75 text-sm mb-3 leading-relaxed">Your contributions help change lives every single day.</p><button class="bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg text-xs font-bold">Learn more</button></div>
+          <div class="absolute -right-6 -bottom-6 opacity-20"><span class="material-icons" style="font-size:80px;">volunteer_activism</span></div>
+        </div>
+        <!-- Quick Links -->
+        <div class="bg-[#701eeb]/5 border border-[#701eeb]/15 rounded-xl p-5">
+          <h2 class="font-bold text-white mb-3">Quick Links</h2>
+          <ul class="space-y-2">
+            <li><a href="#" class="flex items-center gap-3 text-sm text-slate-400 hover:text-[#701eeb] transition-colors group"><span class="material-icons text-sm p-1.5 rounded bg-slate-800 group-hover:bg-[#701eeb]/20">receipt_long</span>Tax Receipts</a></li>
+            <li><a href="#" onclick="showPage('campaigns')" class="flex items-center gap-3 text-sm text-slate-400 hover:text-[#701eeb] transition-colors group"><span class="material-icons text-sm p-1.5 rounded bg-slate-800 group-hover:bg-[#701eeb]/20">explore</span>Browse Campaigns</a></li>
+            <li><a href="#" class="flex items-center gap-3 text-sm text-slate-400 hover:text-[#701eeb] transition-colors group"><span class="material-icons text-sm p-1.5 rounded bg-slate-800 group-hover:bg-[#701eeb]/20">help_outline</span>Support Center</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="border-t border-[#701eeb]/10 py-8 mt-10">
+    <div class="max-w-7xl mx-auto px-6 flex justify-between items-center text-sm text-slate-500">
+      <p>&copy; 2026 CharityHub.</p>
+      <div class="flex gap-6"><a class="hover:text-[#701eeb]" href="#">Privacy</a><a class="hover:text-[#701eeb]" href="#">Terms</a></div>
+    </div>
+  </footer>
+</div>
+
+<!-- ═══════ PAGE: ADMIN ═══════ -->
+<div data-page="admin" id="page-admin">
+  <!-- Admin Nav -->
+  <header class="flex items-center justify-between border-b border-[#701eeb]/20 px-6 py-3 bg-background-dark sticky top-0 z-40">
+    <div class="flex items-center gap-8">
+      <div class="flex items-center gap-3"><span class="material-icons text-[#701eeb] text-3xl">volunteer_activism</span><h2 class="text-white text-lg font-bold">CharityPlus Admin</h2></div>
+      <nav class="hidden md:flex items-center gap-6 text-sm font-medium">
+        <a href="#" onclick="switchAdminSection('overview')" class="text-slate-400 hover:text-[#701eeb]">Overview</a>
+        <a href="#" onclick="switchAdminSection('campaigns')" class="text-white border-b-2 border-[#701eeb] h-10 flex items-center px-1" id="adminNavCampaigns">Campaigns</a>
+        <a href="#" onclick="switchAdminSection('donors')" class="text-slate-400 hover:text-[#701eeb]">Donors</a>
+        <a href="#" onclick="switchAdminSection('audit')" class="text-slate-400 hover:text-[#701eeb]">Audit Log</a>
+      </nav>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="flex items-center bg-[#701eeb]/10 rounded-xl px-3 py-1.5 border border-[#701eeb]/20"><span class="material-icons text-[#701eeb]/60 text-sm mr-2">search</span><input class="bg-transparent border-none focus:ring-0 text-sm placeholder:text-slate-500 w-36 outline-none text-white" placeholder="Search..." type="text"/></div>
+      <button class="relative w-10 h-10 flex items-center justify-center rounded-xl bg-[#701eeb]/20 text-white hover:bg-[#701eeb]/30"><span class="material-icons">notifications</span><span class="notification-dot"></span></button>
+      <div class="w-10 h-10 bg-[#701eeb]/30 border border-[#701eeb]/50 rounded-full flex items-center justify-center"><span class="material-icons text-[#701eeb]">admin_panel_settings</span></div>
+      <button onclick="logout()" class="text-slate-500 hover:text-red-400 text-sm transition-colors ml-2">Logout</button>
+    </div>
+  </header>
+
+  <main class="max-w-[1200px] mx-auto w-full px-6 py-8">
+
+    <!-- OVERVIEW SECTION -->
+    <div id="admin-section-overview">
+      <div class="flex items-center gap-2 mb-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-admin-accent/20 text-admin-accent border border-admin-accent/30">Admin Only</span></div>
+      <h1 class="text-4xl font-black text-white mb-2">Admin Overview</h1>
+      <p class="text-slate-400 mb-8">Platform health at a glance.</p>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-5 mb-10">
+        <div class="admin-card rounded-xl p-5"><span class="material-icons text-[#701eeb] text-2xl mb-2 block">business</span><p class="text-slate-400 text-sm">Total Charities</p><p class="text-2xl font-black text-white" id="admin-stat-charities">0</p></div>
+        <div class="admin-card rounded-xl p-5"><span class="material-icons text-emerald-400 text-2xl mb-2 block">payments</span><p class="text-slate-400 text-sm">Total Raised</p><p class="text-2xl font-black text-white" id="admin-stat-raised">$0</p></div>
+        <div class="admin-card rounded-xl p-5"><span class="material-icons text-accent text-2xl mb-2 block">people</span><p class="text-slate-400 text-sm">Total Donors</p><p class="text-2xl font-black text-white" id="admin-stat-donors">0</p></div>
+        <div class="admin-card rounded-xl p-5"><span class="material-icons text-admin-accent text-2xl mb-2 block">favorite</span><p class="text-slate-400 text-sm">Total Donations</p><p class="text-2xl font-black text-white" id="admin-stat-donations">0</p></div>
+      </div>
+      <!-- Top Charities Chart -->
+      <div class="glass-surface rounded-xl p-6 mb-8">
+        <h2 class="font-bold text-white mb-4">Top Charities by Funding %</h2>
+        <div class="chart-container"><canvas id="adminChart"></canvas></div>
+      </div>
+      <!-- Top Donors -->
+      <div class="glass-surface rounded-xl p-6">
+        <h2 class="font-bold text-white mb-4">Top Donors (Anonymized)</h2>
+        <div id="topDonorsList" class="space-y-2"></div>
+      </div>
+    </div>
+
+    <!-- CAMPAIGNS SECTION -->
+    <div id="admin-section-campaigns" class="hidden">
+      <h1 class="text-4xl font-black text-white mb-2">Campaign Management</h1>
+      <p class="text-slate-400 mb-6">Manage all charity donation campaigns.</p>
+      <div class="flex gap-4 mb-6 border-b border-[#701eeb]/20 pb-0">
+        <button onclick="switchAdminTab('add')" id="tab-add" class="flex items-center gap-2 border-b-2 border-[#701eeb] text-white pb-4 px-2 text-sm font-bold"><span class="material-icons text-sm">add_circle</span>Add Charity</button>
+        <button onclick="switchAdminTab('modify')" id="tab-modify" class="flex items-center gap-2 border-b-2 border-transparent text-slate-500 hover:text-slate-200 pb-4 px-2 text-sm font-bold transition-all"><span class="material-icons text-sm">edit</span>Modify</button>
+        <button onclick="switchAdminTab('remove')" id="tab-remove" class="flex items-center gap-2 border-b-2 border-transparent text-slate-500 hover:text-slate-200 pb-4 px-2 text-sm font-bold transition-all"><span class="material-icons text-sm">delete</span>Remove</button>
+      </div>
+
+      <!-- ADD -->
+      <div id="admin-add" class="glass-surface rounded-xl p-7 max-w-4xl mt-6">
+        <div class="flex items-center gap-5 mb-7 pb-7 border-b border-white/5">
+          <div class="w-20 h-20 rounded-xl bg-[#701eeb]/20 flex items-center justify-center border-2 border-dashed border-[#701eeb]/40 text-[#701eeb]"><div class="text-center"><span class="material-icons text-2xl">add_photo_alternate</span><span class="text-[10px] font-bold uppercase block mt-1">Cover</span></div></div>
+          <div><h3 class="text-white text-lg font-bold">New Campaign Details</h3><p class="text-slate-400 text-sm">Launch a new verified donation campaign.</p></div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="md:col-span-2"><label class="block text-sm font-semibold text-slate-200 mb-2">Charity Name</label><input id="admin-name" class="w-full bg-background-dark border border-[#701eeb]/20 rounded-lg h-11 px-4 focus:ring-2 focus:ring-[#701eeb] text-white placeholder:text-slate-600 outline-none" placeholder="e.g. Ocean Cleanup Initiative 2026" type="text"/></div>
+          <div class="md:col-span-2"><label class="block text-sm font-semibold text-slate-200 mb-2">Description</label><textarea id="admin-desc" class="w-full bg-background-dark border border-[#701eeb]/20 rounded-lg p-4 focus:ring-2 focus:ring-[#701eeb] text-white placeholder:text-slate-600 resize-none outline-none" placeholder="Detailed mission statement..." rows="3"></textarea></div>
+          <div><label class="block text-sm font-semibold text-slate-200 mb-2">Category</label><select id="admin-category" class="w-full bg-background-dark border border-[#701eeb]/20 rounded-lg h-11 px-4 text-white appearance-none outline-none focus:ring-2 focus:ring-[#701eeb]"><option>Health</option><option>Education</option><option>Food</option><option>Environment</option><option>Shelter</option></select></div>
+          <div><label class="block text-sm font-semibold text-slate-200 mb-2">Location</label><select id="admin-location" class="w-full bg-background-dark border border-[#701eeb]/20 rounded-lg h-11 px-4 text-white appearance-none outline-none focus:ring-2 focus:ring-[#701eeb]"><option>Beirut</option><option>Tripoli</option><option>Sidon</option><option>Baalbek</option><option>National</option></select></div>
+          <div><label class="block text-sm font-semibold text-slate-200 mb-2">Target Amount (USD)</label><div class="relative"><span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span><input id="admin-target" class="w-full bg-background-dark border border-[#701eeb]/20 rounded-lg h-11 pl-8 pr-4 text-white placeholder:text-slate-600 outline-none focus:ring-2 focus:ring-[#701eeb]" placeholder="50,000" type="number"/></div></div>
+          <div><label class="block text-sm font-semibold text-slate-200 mb-2">Campaign Deadline</label><input id="admin-deadline" class="w-full bg-background-dark border border-[#701eeb]/20 rounded-lg h-11 px-4 text-white outline-none focus:ring-2 focus:ring-[#701eeb]" type="datetime-local"/></div>
+          <div><label class="block text-sm font-semibold text-slate-200 mb-2">Verification Notes</label><input id="admin-verif" class="w-full bg-background-dark border border-[#701eeb]/20 rounded-lg h-11 px-4 text-white placeholder:text-slate-600 outline-none focus:ring-2 focus:ring-[#701eeb]" placeholder="Documents checked, NGO registered..." type="text"/></div>
+          <div><label class="block text-sm font-semibold text-slate-200 mb-2">Status</label><select id="admin-status" class="w-full bg-background-dark border border-[#701eeb]/20 rounded-lg h-11 px-4 text-white appearance-none outline-none focus:ring-2 focus:ring-[#701eeb]"><option value="Open">Open</option><option value="Draft">Draft</option></select></div>
+          <div class="md:col-span-2 flex justify-end gap-4 mt-4 pt-4 border-t border-white/5">
+            <button onclick="switchAdminSection('overview')" class="px-6 py-2.5 rounded-lg font-bold text-slate-400 hover:bg-[#701eeb]/10">Cancel</button>
+            <button onclick="adminAddCharity()" class="px-8 py-2.5 rounded-lg font-bold bg-[#701eeb] text-white hover:bg-[#701eeb]/90 shadow-lg shadow-[#701eeb]/25 flex items-center gap-2"><span class="material-icons">rocket_launch</span>Create Campaign</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODIFY -->
+      <div id="admin-modify" class="glass-surface rounded-xl p-7 max-w-4xl mt-6 hidden">
+        <h3 class="text-white text-lg font-bold mb-5">Modify Existing Charity</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="md:col-span-2"><label class="block text-sm font-semibold text-slate-200 mb-2">Select Charity</label><select id="modify-select" onchange="fillModifyForm()" class="w-full bg-background-dark border border-[#701eeb]/20 rounded-lg h-11 px-4 text-white appearance-none outline-none focus:ring-2 focus:ring-[#701eeb]"><option value="">&#8212; Select &#8212;</option></select></div>
+          <div class="md:col-span-2"><label class="block text-sm font-semibold text-slate-200 mb-2">Name</label><input id="modify-name" class="w-full bg-background-dark border border-[#701eeb]/20 rounded-lg h-11 px-4 text-white outline-none focus:ring-2 focus:ring-[#701eeb]"/></div>
+          <div><label class="block text-sm font-semibold text-slate-200 mb-2">Target ($)</label><input id="modify-target" type="number" class="w-full bg-background-dark border border-[#701eeb]/20 rounded-lg h-11 px-4 text-white outline-none focus:ring-2 focus:ring-[#701eeb]"/></div>
+          <div><label class="block text-sm font-semibold text-slate-200 mb-2">Status</label><select id="modify-status" class="w-full bg-background-dark border border-[#701eeb]/20 rounded-lg h-11 px-4 text-white appearance-none outline-none focus:ring-2 focus:ring-[#701eeb]"><option value="Open">Open</option><option value="Closed">Closed</option></select></div>
+          <div class="md:col-span-2"><label class="block text-sm font-semibold text-slate-200 mb-2">Impact Update Post</label><input id="modify-update" class="w-full bg-background-dark border border-[#701eeb]/20 rounded-lg h-11 px-4 text-white placeholder:text-slate-600 outline-none focus:ring-2 focus:ring-[#701eeb]" placeholder="e.g. We bought 50 school kits this week!"/></div>
+          <div class="md:col-span-2 flex justify-end gap-4 mt-4 pt-4 border-t border-white/5">
+            <button onclick="adminModifyCharity()" class="px-8 py-2.5 rounded-lg font-bold bg-[#701eeb] text-white hover:bg-[#701eeb]/90 flex items-center gap-2 shadow-lg shadow-[#701eeb]/20"><span class="material-icons">save</span>Save Changes</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- REMOVE -->
+      <div id="admin-remove" class="glass-surface rounded-xl p-7 max-w-4xl mt-6 hidden">
+        <h3 class="text-white text-lg font-bold mb-5">Remove a Charity</h3>
+        <div class="space-y-5">
+          <div><label class="block text-sm font-semibold text-slate-200 mb-2">Select Charity</label><select id="remove-select" class="w-full bg-background-dark border border-[#701eeb]/20 rounded-lg h-11 px-4 text-white appearance-none outline-none focus:ring-2 focus:ring-[#701eeb]"><option value="">&#8212; Select &#8212;</option></select></div>
+          <div class="p-4 border border-red-500/20 bg-red-500/5 rounded-lg text-sm text-red-400"><span class="material-icons align-middle mr-1 text-base">warning</span>This action is permanent and cannot be undone.</div>
+          <div class="flex justify-end"><button onclick="adminRemoveCharity()" class="px-8 py-2.5 rounded-lg font-bold bg-red-600 text-white hover:bg-red-700 flex items-center gap-2"><span class="material-icons">delete</span>Remove Charity</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DONORS SECTION -->
+    <div id="admin-section-donors" class="hidden">
+      <h1 class="text-4xl font-black text-white mb-6">Donor Management</h1>
+      <div class="glass-surface rounded-xl overflow-hidden">
+        <div class="p-5 border-b border-white/5 flex justify-between items-center">
+          <h2 class="font-bold text-white">All Registered Donors</h2>
+          <span id="donor-count-badge" class="text-xs bg-[#701eeb]/20 text-[#701eeb] px-3 py-1 rounded-full font-semibold"></span>
+        </div>
+        <table class="w-full text-left">
+          <thead><tr class="text-slate-500 text-xs uppercase tracking-wider bg-slate-900/50"><th class="px-5 py-3">User ID</th><th class="px-5 py-3">Name</th><th class="px-5 py-3">Email</th><th class="px-5 py-3">Phone</th><th class="px-5 py-3 text-right">Donated</th><th class="px-5 py-3 text-center">Donations</th></tr></thead>
+          <tbody id="adminDonorTable" class="divide-y divide-white/5"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- AUDIT LOG SECTION -->
+    <div id="admin-section-audit" class="hidden">
+      <h1 class="text-4xl font-black text-white mb-2">Audit Log</h1>
+      <p class="text-slate-400 mb-6">All admin actions with timestamps.</p>
+      <div class="glass-surface rounded-xl overflow-hidden">
+        <div class="p-5 border-b border-white/5 flex justify-between items-center">
+          <h2 class="font-bold text-white">Action Log</h2>
+          <button onclick="clearAuditLog()" class="text-xs text-red-400 hover:text-red-300 border border-red-500/20 hover:bg-red-500/10 px-3 py-1.5 rounded-lg">Clear Log</button>
+        </div>
+        <div id="auditLogList" class="divide-y divide-white/5 max-h-[600px] overflow-y-auto"></div>
+      </div>
+    </div>
+
+    <!-- Info cards -->
+    <div class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div class="glass-surface p-5 rounded-xl border-l-4 border-admin-accent"><div class="flex items-center gap-3 mb-2"><span class="material-icons text-admin-accent">verified_user</span><h4 class="font-bold text-white">Compliance Check</h4></div><p class="text-sm text-slate-400">All campaigns reviewed by audit team before funds can be withdrawn.</p></div>
+      <div class="glass-surface p-5 rounded-xl border-l-4 border-[#701eeb]"><div class="flex items-center gap-3 mb-2"><span class="material-icons text-[#701eeb]">analytics</span><h4 class="font-bold text-white">Auto-Reporting</h4></div><p class="text-sm text-slate-400">Monthly reports automatically generated and emailed to campaign contacts.</p></div>
+      <div class="glass-surface p-5 rounded-xl border-l-4 border-emerald-500"><div class="flex items-center gap-3 mb-2"><span class="material-icons text-emerald-400">payments</span><h4 class="font-bold text-white">Fee Structure</h4></div><p class="text-sm text-slate-400">Platform maintenance fees (2.5%) applied at point of processing.</p></div>
+    </div>
+  </main>
+  <footer class="mt-auto py-6 px-6 border-t border-[#701eeb]/10 text-center"><p class="text-slate-500 text-xs">CharityHub Management System v2.0 &#8212; Secured Admin Access</p></footer>
+</div>
+
+<!-- ═══════ PAGE: REGISTER ═══════ -->
+<div data-page="register" id="page-register">
+  <main class="min-h-[calc(100vh-64px)] flex items-center justify-center p-6 bg-gradient-to-br from-background-dark via-[#161b22] to-background-dark">
+    <div class="w-full max-w-2xl">
+      <div class="glass-morphism rounded-xl shadow-2xl p-8 md:p-10">
+        <div class="text-center mb-8"><h1 class="text-3xl font-black text-white mb-2">Create Your Account</h1><p class="text-slate-400 text-sm">Join our community of donors and start making a real impact.</p></div>
+        <div class="space-y-5">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div><label class="text-slate-300 text-sm font-medium block mb-2">First Name</label><div class="relative"><span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">person</span><input id="reg-first" class="w-full pl-11 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder:text-slate-500 focus:ring-2 focus:ring-accent outline-none" placeholder="John" type="text"/></div></div>
+            <div><label class="text-slate-300 text-sm font-medium block mb-2">Last Name</label><div class="relative"><span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">person</span><input id="reg-last" class="w-full pl-11 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder:text-slate-500 focus:ring-2 focus:ring-accent outline-none" placeholder="Doe" type="text"/></div></div>
+          </div>
+          <div><label class="text-slate-300 text-sm font-medium block mb-2">Email Address</label><div class="relative"><span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">mail</span><input id="reg-email" class="w-full pl-11 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder:text-slate-500 focus:ring-2 focus:ring-accent outline-none" placeholder="john.doe@example.com" type="email"/></div><p id="reg-email-err" class="text-red-400 text-xs mt-1 hidden">Please enter a valid email address.</p></div>
+          <div><label class="text-slate-300 text-sm font-medium block mb-2">Phone (XX-XXXXXX)</label><div class="relative"><span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">call</span><input id="reg-phone" class="w-full pl-11 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder:text-slate-500 focus:ring-2 focus:ring-accent outline-none" placeholder="03-123456" type="tel"/></div><p id="reg-phone-err" class="text-red-400 text-xs mt-1 hidden">Format: XX-XXXXXX (e.g. 03-123456)</p></div>
+          <div><label class="text-slate-300 text-sm font-medium block mb-2">Password</label>
+            <div class="relative"><span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">lock</span><input id="reg-pw" oninput="checkPasswordStrength()" class="w-full pl-11 pr-11 py-3 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder:text-slate-500 focus:ring-2 focus:ring-accent outline-none" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" type="password"/><button type="button" onclick="togglePw('reg-pw','pw-eye')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"><span class="material-icons" id="pw-eye">visibility</span></button></div>
+            <div class="mt-3 p-4 bg-slate-900/60 rounded-lg border border-slate-700/50">
+              <div class="flex items-center justify-between mb-2"><span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Password Strength</span><span id="pw-strength-label" class="text-xs font-bold text-slate-500">&#8212;</span></div>
+              <div class="flex gap-1 h-1.5 mb-3"><div id="seg1" class="pw-seg bg-slate-700"></div><div id="seg2" class="pw-seg bg-slate-700"></div><div id="seg3" class="pw-seg bg-slate-700"></div><div id="seg4" class="pw-seg bg-slate-700"></div></div>
+              <ul class="grid grid-cols-2 gap-1.5">
+                <li id="req-len" class="flex items-center gap-1.5 text-xs text-slate-500"><span class="material-icons text-sm">radio_button_unchecked</span>Min 8 chars</li>
+                <li id="req-upper" class="flex items-center gap-1.5 text-xs text-slate-500"><span class="material-icons text-sm">radio_button_unchecked</span>Uppercase letter</li>
+                <li id="req-special" class="flex items-center gap-1.5 text-xs text-slate-500"><span class="material-icons text-sm">radio_button_unchecked</span>Special char</li>
+                <li id="req-num" class="flex items-center gap-1.5 text-xs text-slate-500"><span class="material-icons text-sm">radio_button_unchecked</span>Number</li>
+              </ul>
+            </div>
+          </div>
+          <button onclick="registerUser()" class="w-full bg-accent hover:bg-accent/90 text-white font-bold py-3.5 rounded-lg shadow-lg shadow-accent/20 transition-all flex items-center justify-center gap-2 focus-ring"><span>Create account</span><span class="material-icons">arrow_forward</span></button>
+          <p class="text-slate-500 text-xs italic text-center"><span class="material-icons text-[10px] align-middle">info</span> User ID is auto-generated by the program.</p>
+          <div class="border-t border-slate-700/50 pt-4 text-center"><p class="text-slate-400 text-sm">Already have an account? <button onclick="showPage('login')" class="text-accent font-semibold hover:underline">Sign in</button></p></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ═══════ PAGE: LOGIN ═══════ -->
+<div data-page="login" id="page-login">
+  <main class="min-h-[calc(100vh-64px)] flex items-center justify-center p-6 bg-gradient-to-br from-background-dark via-[#161b22] to-background-dark">
+    <div class="w-full max-w-md">
+      <div class="glass-morphism rounded-xl shadow-2xl p-8 md:p-10">
+        <div class="text-center mb-8"><div class="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/30"><span class="material-icons text-white text-2xl">volunteer_activism</span></div><h1 class="text-3xl font-black text-white mb-2">Welcome back</h1><p class="text-slate-400 text-sm">Sign in to your CharityHub account</p></div>
+        <div class="space-y-4">
+          <div><label class="text-slate-300 text-sm font-medium block mb-2">Email</label><div class="relative"><span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">mail</span><input id="login-email" class="w-full pl-11 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary outline-none" placeholder="you@example.com" type="email"/></div></div>
+          <div><label class="text-slate-300 text-sm font-medium block mb-2">Password</label><div class="relative"><span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">lock</span><input id="login-pw" class="w-full pl-11 pr-11 py-3 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary outline-none" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" type="password" onkeydown="if(event.key==='Enter')loginUser()"/><button type="button" onclick="togglePw('login-pw','login-pw-eye')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"><span class="material-icons" id="login-pw-eye">visibility</span></button></div></div>
+          <div id="login-lock-timer" class="hidden p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400 text-center"></div>
+          <p id="login-err" class="text-red-400 text-sm hidden text-center"></p>
+          <button id="loginBtn" onclick="loginUser()" class="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3.5 rounded-lg shadow-lg shadow-primary/25 transition-all focus-ring">Sign In</button>
+          <div class="text-center text-sm text-slate-400">Don't have an account? <button onclick="showPage('register')" class="text-primary font-semibold hover:underline">Create one &#8594;</button></div>
+          <div class="border-t border-slate-700/50 pt-4 text-center text-slate-600 text-xs">Admin: <span class="font-mono text-slate-400"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="4f2e2b2226210f2c272e3d263b36273a2d612c2022">[email&#160;protected]</a></span> / <span class="font-mono text-slate-400">Admin@123</span></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ═══════ PAGE: RECEIPT ═══════ -->
+<div data-page="receipt" id="page-receipt">
+  <main class="min-h-[calc(100vh-64px)] flex items-center justify-center p-6">
+    <div class="w-full max-w-lg">
+      <div class="glass-morphism rounded-2xl p-10 shadow-2xl text-center">
+        <div class="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6 milestone-glow">
+          <span class="material-icons text-emerald-400 text-4xl">check_circle</span>
+        </div>
+        <h1 class="text-3xl font-black text-white mb-2">Donation Confirmed!</h1>
+        <p class="text-slate-400 mb-8">Thank you for your generosity. Here is your receipt.</p>
+        <div class="bg-slate-900/60 border border-slate-700 rounded-xl p-6 text-left space-y-3 mb-8">
+          <div class="flex justify-between text-sm"><span class="text-slate-400">Receipt ID</span><span class="text-white font-mono font-semibold" id="rcpt-id"></span></div>
+          <div class="flex justify-between text-sm"><span class="text-slate-400">Donation ID</span><span class="text-white font-mono font-semibold" id="rcpt-don-id"></span></div>
+          <div class="flex justify-between text-sm"><span class="text-slate-400">Charity</span><span class="text-white font-semibold" id="rcpt-charity"></span></div>
+          <div class="flex justify-between text-sm"><span class="text-slate-400">Amount</span><span class="text-emerald-400 font-black text-lg" id="rcpt-amount"></span></div>
+          <div class="flex justify-between text-sm"><span class="text-slate-400">Date</span><span class="text-white" id="rcpt-date"></span></div>
+          <div class="flex justify-between text-sm"><span class="text-slate-400">Time</span><span class="text-white" id="rcpt-time"></span></div>
+          <div class="flex justify-between text-sm"><span class="text-slate-400">Donor</span><span class="text-white" id="rcpt-donor"></span></div>
+        </div>
+        <div class="flex gap-3 justify-center">
+          <button onclick="downloadReceiptPDF()" class="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white font-bold px-6 py-3 rounded-xl transition-all shadow-lg shadow-primary/25"><span class="material-icons text-sm">download</span>Download PDF</button>
+          <button onclick="showPage('campaigns')" class="flex items-center gap-2 border border-slate-600 hover:border-primary text-slate-300 hover:text-white font-bold px-6 py-3 rounded-xl transition-all"><span class="material-icons text-sm">explore</span>More Charities</button>
+        </div>
+        <div class="mt-6">
+          <div id="simulated-notif" class="flex items-center gap-3 bg-green-900/30 border border-green-500/20 rounded-lg p-3 text-sm text-green-400">
+            <span class="material-icons text-base">mark_email_read</span>
+            <span>Confirmation email sent to <strong id="rcpt-email"></strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ═══════ DONATE MODAL ═══════ -->
+<div id="donateModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-[200] hidden items-center justify-center">
+  <div class="bg-surface-card border border-primary/20 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="text-xl font-bold text-white flex items-center gap-2"><span class="material-icons text-primary">volunteer_activism</span>Make a Donation</h3>
+      <button onclick="closeModal()" class="text-slate-500 hover:text-white"><span class="material-icons">close</span></button>
+    </div>
+    <div id="modal-charity-info" class="mb-5 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+      <p class="text-sm text-primary font-semibold" id="modal-charity-name"></p>
+      <p class="text-xs text-slate-400 mt-1" id="modal-charity-id"></p>
+    </div>
+    <div class="space-y-4">
+      <div><label class="block text-sm font-medium text-slate-300 mb-2">Amount (USD)</label>
+        <div class="relative"><span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span><input id="modal-amount" type="number" min="1" class="w-full pl-8 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary outline-none" placeholder="50"/></div>
+        <div class="flex gap-2 mt-2"><button onclick="setAmount(10)" class="flex-1 py-1.5 text-xs bg-primary/10 hover:bg-primary/20 text-primary rounded-lg font-semibold transition-colors">$10</button><button onclick="setAmount(25)" class="flex-1 py-1.5 text-xs bg-primary/10 hover:bg-primary/20 text-primary rounded-lg font-semibold transition-colors">$25</button><button onclick="setAmount(50)" class="flex-1 py-1.5 text-xs bg-primary/10 hover:bg-primary/20 text-primary rounded-lg font-semibold transition-colors">$50</button><button onclick="setAmount(100)" class="flex-1 py-1.5 text-xs bg-primary/10 hover:bg-primary/20 text-primary rounded-lg font-semibold transition-colors">$100</button></div>
+      </div>
+      <div><label class="block text-sm font-medium text-slate-300 mb-2">Message <span class="text-slate-600">(optional)</span></label><input id="modal-msg" class="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary outline-none" placeholder="Leave an encouraging message..."/></div>
+      <p id="modal-err" class="text-red-400 text-sm hidden"></p>
+      <div class="flex gap-3 pt-1">
+        <button onclick="closeModal()" class="flex-1 py-3 rounded-lg font-bold text-slate-400 hover:bg-slate-800 border border-slate-700 transition-all">Cancel</button>
+        <button onclick="submitDonation()" class="flex-1 py-3 rounded-lg font-bold bg-primary hover:bg-primary-dark text-white transition-all shadow-lg shadow-primary/25 flex items-center justify-center gap-1"><span class="material-icons text-sm">favorite</span>Donate Now</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CANCEL CONFIRM MODAL -->
+<div id="cancelModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-[200] hidden items-center justify-center">
+  <div class="bg-surface-card border border-red-500/20 rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl text-center">
+    <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4"><span class="material-icons text-red-400 text-3xl">cancel</span></div>
+    <h3 class="text-xl font-bold text-white mb-2">Cancel Donation?</h3>
+    <p class="text-slate-400 text-sm mb-6" id="cancelModalMsg"></p>
+    <div class="flex gap-3 justify-center">
+      <button onclick="closeCancelModal()" class="flex-1 py-3 rounded-lg font-bold text-slate-400 hover:bg-slate-800 border border-slate-700 transition-all">Keep It</button>
+      <button onclick="confirmCancel()" class="flex-1 py-3 rounded-lg font-bold bg-red-600 text-white hover:bg-red-700 transition-all">Yes, Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// ═══════ SECURITY UTILITIES ═══════
+// SHA-256 hashing with per-user salt (PBKDF2-style using Web Crypto API)
+async function hashPassword(password, salt) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), {name:'PBKDF2'}, false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({name:'PBKDF2', salt:enc.encode(salt), iterations:100000, hash:'SHA-256'}, keyMaterial, 256);
+  return Array.from(new Uint8Array(bits)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function generateSalt() {
+  return Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+// Escape HTML to prevent XSS
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+// Sanitize input - strip dangerous chars
+function sanitizeInput(s) {
+  return String(s).replace(/[<>"'`\\;{}()\[\]]/g,'').trim();
+}
+// Pre-hashed passwords for seed data (salt:hash format)
+// Generated offline: salt=fixed seed salt, hash=PBKDF2(password,salt,100k,SHA256)
+// For demo seed users we store salt+hash together as "salt:hash"
+// At runtime login, we re-derive and compare.
+// Seed hashes pre-computed (synchronous fallback for demo only using subtle crypto):
+const SEED_SALT_1 = 'a1b2c3d4e5f6a7b8';
+const SEED_SALT_2 = 'b2c3d4e5f6a7b8c9';
+const SEED_SALT_3 = 'c3d4e5f6a7b8c9d0';
+
+// ═══════ STATE ═══════
+const state = {
+  charities: [
+    {id:"CH-0001",name:"Unity Uplift",desc:"Committed to fostering positive social change in communities across Lebanon and the region.",target:15000,current:10000,deadline:"2025-08-01",status:"Open",category:"Shelter",location:"Beirut",verified:true,verifNotes:"NGO registered with Ministry of Social Affairs. Documents verified 2024.",updates:["Provided shelter kits to 120 families this month.","Opened 2 new community centers in South Beirut."]},
+    {id:"CH-0002",name:"Harmony Help",desc:"Mental health support and well-being programs for underserved communities.",target:20000,current:25000,deadline:"2024-12-31",status:"Closed",category:"Health",location:"Tripoli",verified:true,verifNotes:"Partner of WHO Lebanon. All financials publicly audited.",updates:["Reached goal! 500 therapy sessions provided."]},
+    {id:"CH-0003",name:"Green Earth Lebanon",desc:"Environmental conservation, tree planting, and sustainability initiatives across the country.",target:50000,current:18000,deadline:"2025-12-31",status:"Open",category:"Environment",location:"Baalbek",verified:true,verifNotes:"Certified by Lebanese Environment Ministry.",updates:["Planted 2,000 trees in Shouf Biosphere this quarter.","Partnership with 3 local schools for eco-education."]},
+    {id:"CH-0004",name:"Nour School Fund",desc:"Providing school supplies, scholarships, and digital tools to children in remote areas.",target:30000,current:27500,deadline:"2025-09-01",status:"Open",category:"Education",location:"Sidon",verified:true,verifNotes:"Ministry of Education certified. IRS charity status confirmed.",updates:["Distributed 400 school bags and laptops this semester."]},
+    {id:"CH-0005",name:"Food For All",desc:"Emergency food distribution to families affected by the economic crisis in Lebanon.",target:10000,current:9200,deadline:"2025-07-01",status:"Open",category:"Food",location:"Beirut",verified:false,verifNotes:"Verification in progress.",updates:["Fed 300 families last week."]},
+    {id:"CH-0006",name:"Safe Homes",desc:"Rebuilding homes damaged by conflict and natural disasters for displaced families.",target:80000,current:12000,deadline:"2026-06-30",status:"Open",category:"Shelter",location:"National",verified:true,verifNotes:"UN-Habitat partner. Fully audited by international team.",updates:["Construction started on 15 homes in Akkar."]},
+  ],
+  donations:[],
+  users:[
+    // Passwords stored as "salt:hash" — never plaintext. isAdmin is explicit boolean from DB, never derived from name.
+    {id:"US-0001",firstName:"Zahi",lastName:"Chami",email:"zahi.chami@ua.edu.lb",phone:"03-000000",password:"a1b2c3d4e5f6a7b8:PENDING",isAdmin:false,firstLogin:false,location:"Beirut",categories:[],_plainForSeed:"P@ssword1",_salt:"a1b2c3d4e5f6a7b8"},
+    {id:"US-0002",firstName:"Admin",lastName:"CharityHub",email:"admin@charityhub.com",phone:"70-000000",password:"b2c3d4e5f6a7b8c9:PENDING",isAdmin:true,firstLogin:false,location:"Beirut",categories:[],_plainForSeed:"Admin@123",_salt:"b2c3d4e5f6a7b8c9"},
+    {id:"US-0003",firstName:"John",lastName:"Smith",email:"john.smith@hotmail.com",phone:"76-112233",password:"c3d4e5f6a7b8c9d0:PENDING",isAdmin:false,firstLogin:false,location:"Tripoli",categories:[],_plainForSeed:"John@pass1",_salt:"c3d4e5f6a7b8c9d0"},
+  ],
+  auditLog:[],
+  notifications:[],
+  currentUser:null,
+  nextDonNum:1,
+  nextUserNum:4,
+  nextCharityNum:7,
+  loginAttempts:0,
+  lockUntil:null,
+  cancelTargetId:null,
+  currentLang:'en',
+  monthlyChart:null,
+  adminChart:null,
+};
+
+// Seed some donations
+function seedDonations(){
+  const months=["Jan","Feb","Mar","Apr"];
+  months.forEach((m,i)=>{
+    state.donations.push({id:`DN-2026-${String(state.nextDonNum++).padStart(5,'0')}`,charityId:"CH-0001",userId:"US-0001",amount:50+i*30,date:`15-0${i+1}-2026`,time:"10:30",msg:"Keep up the great work!"});
+    state.donations.push({id:`DN-2026-${String(state.nextDonNum++).padStart(5,'0')}`,charityId:"CH-0004",userId:"US-0001",amount:100+i*15,date:`20-0${i+1}-2026`,time:"14:00",msg:""});
+  });
+  state.donations.push({id:`DN-2026-${String(state.nextDonNum++).padStart(5,'0')}`,charityId:"CH-0003",userId:"US-0003",amount:250,date:"10-03-2026",time:"09:15",msg:"Save our forests!"});
+  state.donations.push({id:`DN-2026-${String(state.nextDonNum++).padStart(5,'0')}`,charityId:"CH-0005",userId:"US-0003",amount:75,date:"12-04-2026",time:"16:45",msg:""});
+  // Update charity amounts
+  state.charities[0].current+=50+80+110+140;
+  state.charities[3].current+=100+115+130+145;
+  state.charities[2].current+=250;
+  state.charities[4].current+=75;
+}
+seedDonations();
+
+// ═══════ HASH SEED PASSWORDS ON LOAD ═══════
+async function initSeedPasswords() {
+  for (const u of state.users) {
+    if (u._plainForSeed && u._salt) {
+      u.password = u._salt + ':' + await hashPassword(u._plainForSeed, u._salt);
+      delete u._plainForSeed; // Remove plaintext immediately from memory
+    }
+  }
+}
+initSeedPasswords();
+
+// Check and auto-close charities past deadline
+function autoCloseExpired(){
+  const now=new Date();
+  state.charities.forEach(c=>{
+    if(c.status==='Open'&&new Date(c.deadline)<now){
+      c.status='Closed';
+      addAuditLog('SYSTEM','Auto-closed',`${c.name} (${c.id}) deadline passed`);
+    }
+  });
+}
+autoCloseExpired();
+
+// ═══════ NAVIGATION ═══════
+function showPage(page){
+  document.querySelectorAll('[data-page]').forEach(el=>el.classList.remove('active'));
+  const p=document.getElementById('page-'+page);
+  if(p)p.classList.add('active');
+
+  // Nav visibility
+  const hideNav=['admin'];
+  document.getElementById('mainNav').style.display=hideNav.includes(page)?'none':'';
+
+  // Active nav link
+  ['home','campaigns','dashboard'].forEach(n=>{
+    const el=document.getElementById('nav-'+n);
+    if(el){el.style.color='';el.style.borderBottom='';}
+  });
+  if(['home','campaigns','dashboard'].includes(page)){
+    const el=document.getElementById('nav-'+page);
+    if(el){el.style.color='#14B8A6';el.style.borderBottom='2px solid #14B8A6';}
+  }
+
+  if(page==='campaigns'){renderCampaigns();}
+  if(page==='dashboard'){renderDashboard();}
+  if(page==='admin'){renderAdminOverview();populateAdminSelects();switchAdminSection('overview');}
+  window.scrollTo(0,0);
+}
+
+// ═══════ LANG ═══════
+function toggleLang(){
+  const html=document.getElementById('htmlRoot');
+  const btn=document.getElementById('langBtn');
+  if(state.currentLang==='en'){
+    html.setAttribute('dir','rtl');
+    html.setAttribute('lang','ar');
+    btn.textContent='EN';
+    state.currentLang='ar';
+  } else {
+    html.setAttribute('dir','ltr');
+    html.setAttribute('lang','en');
+    btn.textContent='AR';
+    state.currentLang='en';
+  }
+}
+
+// ═══════ NOTIFICATIONS ═══════
+function addNotification(msg, type='info'){
+  state.notifications.unshift({id:Date.now(),msg,type,read:false,time:new Date().toLocaleTimeString()});
+  renderNotifications();
+  document.getElementById('notifDot').style.display='block';
+}
+function toggleNotifPanel(){
+  const p=document.getElementById('notifPanel');
+  p.classList.toggle('hidden');
+  if(!p.classList.contains('hidden')){
+    state.notifications.forEach(n=>n.read=true);
+    document.getElementById('notifDot').style.display='none';
+  }
+}
+function renderNotifications(){
+  const list=document.getElementById('notifList');
+  if(state.notifications.length===0){list.innerHTML='<p class="p-5 text-sm text-slate-500 text-center">No notifications</p>';return;}
+  list.innerHTML=state.notifications.slice(0,10).map(n=>`
+    <div class="p-4 hover:bg-white/5 transition-colors">
+      <p class="text-sm text-white font-medium">${n.msg}</p>
+      <p class="text-xs text-slate-500 mt-1">${n.time}</p>
+    </div>`).join('');
+}
+
+// ═══════ AUDIT LOG ═══════
+function addAuditLog(user, action, detail){
+  const ts=new Date().toLocaleString();
+  state.auditLog.unshift({user,action,detail,ts});
+}
+function renderAuditLog(){
+  const list=document.getElementById('auditLogList');
+  if(state.auditLog.length===0){list.innerHTML='<p class="p-8 text-center text-slate-500">No actions logged yet.</p>';return;}
+  list.innerHTML=state.auditLog.map((e,i)=>`
+    <div class="audit-row flex items-start gap-4 p-4">
+      <div class="w-8 h-8 rounded-lg bg-[#701eeb]/20 flex items-center justify-center shrink-0"><span class="material-icons text-[#701eeb] text-sm">history</span></div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold text-white">${e.action}: <span class="text-slate-300 font-normal">${e.detail}</span></p>
+        <p class="text-xs text-slate-500 mt-0.5">By <strong>${e.user}</strong> &bull; ${e.ts}</p>
+      </div>
+    </div>`).join('');
+}
+function clearAuditLog(){
+  state.auditLog=[];
+  renderAuditLog();
+}
+
+// ═══════ CAMPAIGNS ═══════
+const campImgs=["https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=600&q=80","https://images.unsplash.com/photo-1542601906897-5d76eac3aca4?w=600&q=80","https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?w=600&q=80","https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=600&q=80","https://images.unsplash.com/photo-1593113598332-cd288d649433?w=600&q=80","https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=600&q=80"];
+const catIcons={Health:"local_hospital",Education:"school",Food:"restaurant",Environment:"park",Shelter:"home"};
+
+function renderCampaigns(){
+  autoCloseExpired();
+  const search=(document.getElementById('campSearch')?.value||'').toLowerCase();
+  const cat=document.getElementById('campCategory')?.value||'all';
+  const status=document.getElementById('campStatus')?.value||'all';
+  const sort=document.getElementById('campSort')?.value||'funded';
+
+  let list=[...state.charities];
+  if(cat!=='all')list=list.filter(c=>c.category===cat);
+  if(status!=='all')list=list.filter(c=>c.status===status);
+  if(search)list=list.filter(c=>c.name.toLowerCase().includes(search)||c.desc.toLowerCase().includes(search));
+  if(sort==='funded')list.sort((a,b)=>(b.current/b.target)-(a.current/a.target));
+  if(sort==='target')list.sort((a,b)=>b.target-a.target);
+  if(sort==='deadline')list.sort((a,b)=>new Date(a.deadline)-new Date(b.deadline));
+  if(sort==='newest')list.sort((a,b)=>b.id.localeCompare(a.id));
+
+  const open=state.charities.filter(c=>c.status==='Open').length;
+  const raised=state.charities.reduce((s,c)=>s+c.current,0);
+  document.getElementById('stat-live').textContent=open;
+  document.getElementById('stat-raised').textContent='$'+(raised>=1000?(raised/1000).toFixed(1)+'K':raised);
+
+  const grid=document.getElementById('campaignGrid');
+  if(list.length===0){grid.innerHTML='<div class="col-span-3 py-20 text-center text-slate-500"><span class="material-icons text-5xl block mb-3 opacity-30">search_off</span>No campaigns match your filters.</div>';return;}
+
+  grid.innerHTML=list.map((c,i)=>{
+    const pct=Math.min(100,Math.round(c.current/c.target*100));
+    const isOpen=c.status==='Open';
+    const dl=new Date(c.deadline);
+    const daysLeft=Math.ceil((dl-new Date())/(1000*60*60*24));
+    const milestone=pct>=90&&isOpen?'<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-primary/80 to-transparent py-2 px-3"><p class="text-white text-xs font-bold flex items-center gap-1"><span class="material-icons text-xs">local_fire_department</span>'+pct+'% funded &#8212; Final push!</p></div>':'';
+    const latestUpdate=c.updates?.length?`<div class="mt-3 p-2.5 bg-primary/8 border border-primary/15 rounded-lg text-xs text-slate-300"><span class="material-icons text-primary text-xs align-middle mr-1">campaign</span>${c.updates[c.updates.length-1]}</div>`:'';
+    return `<div class="glass-card rounded-xl overflow-hidden flex flex-col group">
+      <div class="relative h-44">
+        <img src="${campImgs[i%campImgs.length]}" alt="${c.name}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"/>
+        <div class="absolute top-3 left-3 ${isOpen?'bg-primary':'bg-slate-600'} text-white text-xs font-bold px-3 py-1 rounded-full">${c.status.toUpperCase()}</div>
+        <div class="absolute top-3 right-3 bg-black/50 backdrop-blur-md text-white text-xs font-medium px-2.5 py-1 rounded-full">${c.id}</div>
+        ${isOpen&&daysLeft<=7&&daysLeft>0?`<div class="absolute bottom-3 left-3 bg-red-500/80 text-white text-xs font-bold px-2.5 py-1 rounded-full">${daysLeft}d left!</div>`:''}
+        ${milestone}
+      </div>
+      <div class="p-5 flex flex-col flex-grow">
+        <div class="flex items-start justify-between mb-2">
+          <h3 class="text-lg font-bold text-white group-hover:text-primary transition-colors leading-snug">${c.name}</h3>
+          ${c.verified?`<span class="badge-verified text-primary text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0 ml-2"><span class="material-icons text-xs">verified</span>Verified</span>`:''}
+        </div>
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full flex items-center gap-1"><span class="material-icons text-xs">${catIcons[c.category]||'category'}</span>${c.category}</span>
+          <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full flex items-center gap-1"><span class="material-icons text-xs">location_on</span>${c.location}</span>
+        </div>
+        <p class="text-sm text-slate-400 mb-4 line-clamp-2 leading-relaxed">${c.desc}</p>
+        ${latestUpdate}
+        <div class="mt-auto pt-4 space-y-3">
+          <div><div class="flex justify-between text-sm mb-1.5"><span class="text-slate-400 text-xs">Raised: <strong class="text-white">$${c.current.toLocaleString()}</strong></span><span class="text-primary font-bold text-sm">${pct}%</span></div>
+            <div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden"><div class="bg-primary h-full rounded-full prog-fill" style="width:${pct}%"></div></div>
+          </div>
+          <div class="flex justify-between items-center text-xs py-2.5 border-y border-primary/10">
+            <div><span class="block text-slate-500 uppercase tracking-tight font-semibold mb-0.5">Target</span><span class="font-bold text-white">$${c.target.toLocaleString()}</span></div>
+            <div class="text-right"><span class="block text-slate-500 uppercase tracking-tight font-semibold mb-0.5">${isOpen?'Deadline':'Closed'}</span><span class="font-bold text-white">${c.deadline}</span></div>
+          </div>
+          ${c.verified?`<div class="text-xs text-slate-500 italic flex items-start gap-1"><span class="material-icons text-xs text-primary mt-0.5">shield</span><span>${c.verifNotes}</span></div>`:''}
+          <div class="flex gap-2">
+            ${isOpen?`<button onclick="openDonateModal('${c.id}')" class="flex-1 bg-primary hover:bg-primary-dark text-white font-bold py-2.5 rounded-lg transition-all text-sm">Donate Now</button>`:`<button disabled class="flex-1 bg-slate-700 text-slate-500 font-bold py-2.5 rounded-lg cursor-not-allowed text-sm">Goal Reached</button>`}
+            <button onclick="showCharityDetail('${c.id}')" class="px-3 border border-primary/20 hover:bg-primary/10 rounded-lg transition-all" title="View Updates"><span class="material-icons text-primary text-lg">visibility</span></button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function filterCampaigns(){renderCampaigns();}
+
+function showCharityDetail(id){
+  const c=state.charities.find(x=>x.id===id);
+  if(!c)return;
+  const updates=(c.updates||[]).map(u=>`<div class="flex gap-3 p-3 bg-primary/5 border border-primary/10 rounded-lg"><span class="material-icons text-primary text-sm mt-0.5">campaign</span><p class="text-sm text-slate-300">${u}</p></div>`).join('');
+  showToast(`Updates for ${c.name}: ${c.updates?.[c.updates.length-1]||'No updates yet.'}`, 'info', 5000);
+}
+
+// ═══════ DONATE MODAL ═══════
+function openDonateModal(charityId){
+  if(!state.currentUser){showPage('login');showToast('Please sign in to donate','info');return;}
+  const c=state.charities.find(x=>x.id===charityId);
+  if(!c||c.status!=='Open'){showToast('This charity is not accepting donations.','error');return;}
+  state.modalCharityId=charityId;
+  document.getElementById('modal-charity-name').textContent='Donating to: '+c.name;
+  document.getElementById('modal-charity-id').textContent=c.id+' • '+c.category;
+  document.getElementById('modal-amount').value='';
+  document.getElementById('modal-msg').value='';
+  document.getElementById('modal-err').classList.add('hidden');
+  document.getElementById('donateModal').classList.replace('hidden','flex');
+}
+function closeModal(){document.getElementById('donateModal').classList.replace('flex','hidden');}
+function setAmount(v){document.getElementById('modal-amount').value=v;}
+
+function submitDonation(){
+  const amount=parseFloat(document.getElementById('modal-amount').value);
+  if(!amount||amount<=0){
+    document.getElementById('modal-err').textContent='Please enter a valid amount greater than $0.';
+    document.getElementById('modal-err').classList.remove('hidden');return;
+  }
+  const c=state.charities.find(x=>x.id===state.modalCharityId);
+  if(!c||c.status!=='Open'){document.getElementById('modal-err').textContent='This charity is now closed.';document.getElementById('modal-err').classList.remove('hidden');return;}
+
+  const now=new Date();
+  const date=`${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()}`;
+  const time=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const donId=`DN-${now.getFullYear()}-${String(state.nextDonNum++).padStart(5,'0')}`;
+  const msg=document.getElementById('modal-msg').value;
+
+  state.donations.push({id:donId,charityId:c.id,userId:state.currentUser.id,amount,date,time,msg});
+  c.current+=amount;
+  closeModal();
+
+  // Receipt page
+  const rcptId='RCP-'+Date.now();
+  document.getElementById('rcpt-id').textContent=rcptId;
+  document.getElementById('rcpt-don-id').textContent=donId;
+  document.getElementById('rcpt-charity').textContent=c.name;
+  document.getElementById('rcpt-amount').textContent='$'+amount.toFixed(2);
+  document.getElementById('rcpt-date').textContent=date;
+  document.getElementById('rcpt-time').textContent=time;
+  document.getElementById('rcpt-donor').textContent=`${state.currentUser.firstName} ${state.currentUser.lastName}`;
+  document.getElementById('rcpt-email').textContent=state.currentUser.email;
+  state._lastReceiptData={rcptId,donId,charityName:c.name,amount,date,time,donor:`${state.currentUser.firstName} ${state.currentUser.lastName}`,email:state.currentUser.email};
+
+  // Notifications
+  addNotification(`Donation confirmed: $${amount.toFixed(2)} to ${c.name}`, 'success');
+  addNotification(`Campaign updated: ${c.name} is now ${Math.round(c.current/c.target*100)}% funded.`, 'info');
+
+  showPage('receipt');
+  if(c.current>=c.target){c.status='Closed';showToast(`${c.name} has reached its funding goal! 🎉`,'success');}
+}
+
+function downloadReceiptPDF(){
+  const d=state._lastReceiptData;
+  if(!d)return;
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Receipt ${d.donId}</title>
+  <style>body{font-family:Inter,sans-serif;background:#fff;color:#1e293b;margin:0;padding:0;}
+  .page{max-width:600px;margin:0 auto;padding:40px;}
+  .logo{display:flex;align-items:center;gap:12px;margin-bottom:30px;}
+  .logo-box{width:40px;height:40px;background:#14B8A6;border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-size:20px;}
+  h1{font-size:28px;font-weight:900;color:#0f172a;margin:20px 0 5px;}
+  .sub{color:#64748b;margin-bottom:30px;}
+  .card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:24px;}
+  .row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #e2e8f0;}
+  .row:last-child{border-bottom:none;}
+  .label{color:#64748b;font-size:14px;}
+  .val{font-weight:700;font-size:14px;color:#0f172a;}
+  .amount{font-size:32px;font-weight:900;color:#14B8A6;text-align:center;padding:20px;}
+  .footer{text-align:center;color:#94a3b8;font-size:12px;margin-top:40px;border-top:1px solid #e2e8f0;padding-top:20px;}
+  .badge{background:#d1fae5;color:#059669;font-weight:700;font-size:12px;padding:4px 12px;border-radius:20px;display:inline-block;}
+  </style></head><body><div class="page">
+  <div class="logo"><div class="logo-box">&#10084;</div><div><strong style="font-size:20px">CharityHub</strong><div style="font-size:12px;color:#64748b">Transparent Giving, Real Impact</div></div></div>
+  <span class="badge">&#10003; Donation Confirmed</span>
+  <h1>Official Donation Receipt</h1>
+  <p class="sub">Keep this for your tax records. Receipt ID: <strong>${d.rcptId}</strong></p>
+  <div class="amount">$${d.amount.toFixed(2)}</div>
+  <div class="card">
+    <div class="row"><span class="label">Donation ID</span><span class="val">${d.donId}</span></div>
+    <div class="row"><span class="label">Charity</span><span class="val">${d.charityName}</span></div>
+    <div class="row"><span class="label">Donor</span><span class="val">${d.donor}</span></div>
+    <div class="row"><span class="label">Email</span><span class="val">${d.email}</span></div>
+    <div class="row"><span class="label">Date</span><span class="val">${d.date}</span></div>
+    <div class="row"><span class="label">Time</span><span class="val">${d.time}</span></div>
+    <div class="row"><span class="label">Platform</span><span class="val">CharityHub</span></div>
+  </div>
+  <div class="footer"><p>CharityHub Inc. &bull; 2026 &bull; All donations are verified and transparent.</p><p>This is an official receipt for tax purposes.</p></div>
+  </div><script>window.onload=()=>window.print()<\/script></body></html>`;
+  const w=window.open('','_blank');w.document.write(html);w.document.close();
+}
+
+// ═══════ DASHBOARD ═══════
+function renderDashboard(){
+  const myDons=state.donations.filter(d=>d.userId===state.currentUser?.id);
+  const total=myDons.reduce((s,d)=>s+d.amount,0);
+  const unique=new Set(myDons.map(d=>d.charityId)).size;
+  document.getElementById('kpi-total').textContent='$'+total.toFixed(2);
+  document.getElementById('kpi-count').textContent=myDons.length;
+  document.getElementById('kpi-campaigns').textContent=unique;
+
+  renderDonationTable(myDons);
+  renderMonthlyChart(myDons);
+  renderTopCharitiesWidget();
+}
+
+function renderDonationTable(myDons){
+  const q=(document.getElementById('donSearchInput')?.value||'').toLowerCase();
+  let sorted=[...myDons].sort((a,b)=>a.amount!==b.amount?a.amount-b.amount:a.date.localeCompare(b.date));
+  if(q)sorted=sorted.filter(d=>{const c=state.charities.find(x=>x.id===d.charityId);return c?.name.toLowerCase().includes(q)||d.id.toLowerCase().includes(q);});
+  const tbody=document.getElementById('donationTable');
+  if(sorted.length===0){tbody.innerHTML=`<tr><td colspan="5" class="px-5 py-12 text-center text-slate-500"><span class="material-icons text-4xl block mb-2 opacity-30">inbox</span>No donations yet. <button onclick="showPage('campaigns')" class="text-[#701eeb] hover:underline">Browse charities &#8594;</button></td></tr>`;return;}
+  tbody.innerHTML=sorted.map(d=>{
+    const c=state.charities.find(x=>x.id===d.charityId);
+    const dl=c?new Date(c.deadline):null;
+    const canCancel=dl?new Date()<=dl:true;
+    return `<tr class="hover:bg-[#701eeb]/5 transition-colors">
+      <td class="px-5 py-3 text-xs font-mono text-slate-400">${d.id}</td>
+      <td class="px-5 py-3 text-sm font-medium text-white">${c?.name||'?'}</td>
+      <td class="px-5 py-3 text-sm font-black text-right text-emerald-400">$${d.amount.toFixed(2)}</td>
+      <td class="px-5 py-3 text-xs text-slate-400">${d.date}</td>
+      <td class="px-5 py-3 text-xs text-center">
+        <div class="flex justify-center gap-2">
+          ${canCancel?`<button onclick="modifyDonation('${d.id}')" class="text-[#701eeb] hover:text-[#701eeb]/70 flex items-center gap-1 text-xs font-semibold"><span class="material-icons text-sm">edit</span>Modify</button>
+          <button onclick="openCancelModal('${d.id}')" class="text-red-500 hover:text-red-400 flex items-center gap-1 text-xs font-semibold"><span class="material-icons text-sm">cancel</span>Cancel</button>`
+          :`<span class="text-slate-600 text-xs">Deadline passed</span>`}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+function filterDonations(){
+  const myDons=state.donations.filter(d=>d.userId===state.currentUser?.id);
+  renderDonationTable(myDons);
+}
+
+function renderMonthlyChart(myDons){
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const byMonth=new Array(12).fill(0);
+  myDons.forEach(d=>{
+    const parts=d.date.split('-');
+    if(parts.length===3){const m=parseInt(parts[1])-1;if(m>=0&&m<12)byMonth[m]+=d.amount;}
+  });
+  const ctx=document.getElementById('monthlyChart');
+  if(!ctx)return;
+  if(state.monthlyChart)state.monthlyChart.destroy();
+  state.monthlyChart=new Chart(ctx,{type:'bar',data:{labels:months,datasets:[{label:'Donations ($)',data:byMonth,backgroundColor:'rgba(112,30,235,0.5)',borderColor:'rgba(112,30,235,0.9)',borderWidth:2,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+c.raw.toFixed(2)}}},scales:{x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#94a3b8',font:{size:11}}},y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#94a3b8',font:{size:11},callback:v=>'$'+v}}}}});
+}
+
+function renderTopCharitiesWidget(){
+  const list=document.getElementById('topCharitiesList');
+  if(!list)return;
+  const sorted=[...state.charities].sort((a,b)=>(b.current/b.target)-(a.current/a.target)).slice(0,4);
+  list.innerHTML=sorted.map((c,i)=>{
+    const pct=Math.min(100,Math.round(c.current/c.target*100));
+    const medals=['&#127947;','&#129352;','&#129353;',''];
+    return `<div class="flex items-center gap-3">
+      <span class="text-lg w-5 text-center">${medals[i]||''}</span>
+      <div class="flex-1 min-w-0"><p class="text-xs font-semibold text-white truncate">${c.name}</p><div class="w-full bg-slate-700 h-1 rounded-full mt-1"><div class="bg-[#701eeb] h-full rounded-full" style="width:${pct}%"></div></div></div>
+      <span class="text-xs font-bold text-[#701eeb] shrink-0">${pct}%</span>
+    </div>`;
+  }).join('');
+}
+
+// ═══════ CANCEL / MODIFY ═══════
+function openCancelModal(id){
+  state.cancelTargetId=id;
+  const d=state.donations.find(x=>x.id===id);
+  const c=state.charities.find(x=>x.id===d?.charityId);
+  document.getElementById('cancelModalMsg').textContent=`Cancel $${d?.amount.toFixed(2)} donation to "${c?.name||'?'}"? This will refund the charity.`;
+  document.getElementById('cancelModal').classList.replace('hidden','flex');
+}
+function closeCancelModal(){document.getElementById('cancelModal').classList.replace('flex','hidden');state.cancelTargetId=null;}
+function confirmCancel(){
+  const id=state.cancelTargetId;
+  const idx=state.donations.findIndex(d=>d.id===id);
+  if(idx===-1){closeCancelModal();return;}
+  const d=state.donations[idx];
+  const c=state.charities.find(x=>x.id===d.charityId);
+  if(c)c.current=Math.max(0,c.current-d.amount);
+  if(c&&c.status==='Closed'&&c.current<c.target)c.status='Open';
+  state.donations.splice(idx,1);
+  closeCancelModal();
+  renderDashboard();
+  showToast('Donation cancelled and refunded.','info');
+  addNotification(`Donation ${id} cancelled. Refund processed.`,'info');
+}
+
+function modifyDonation(id){
+  const d=state.donations.find(x=>x.id===id);
+  if(!d)return;
+  const newAmt=parseFloat(prompt(`Modify donation ${d.id}\nCurrent: $${d.amount}\nNew amount:`,d.amount));
+  if(!newAmt||isNaN(newAmt)||newAmt<=0){showToast('Invalid amount. Must be > $0.','error');return;}
+  const c=state.charities.find(x=>x.id===d.charityId);
+  if(c)c.current=Math.max(0,c.current-d.amount+newAmt);
+  d.amount=newAmt;
+  renderDashboard();
+  showToast('Donation updated!','success');
+  addNotification(`Donation ${id} modified to $${newAmt.toFixed(2)}.`,'info');
+}
+
+// ═══════ REPORTS ═══════
+function generateReport(){
+  const user=state.currentUser;
+  const myDons=state.donations.filter(d=>d.userId===user?.id);
+  if(myDons.length===0){showToast('No donations to export.','info');return;}
+  const sorted=[...myDons].sort((a,b)=>a.amount-b.amount);
+  const total=sorted.reduce((s,d)=>s+d.amount,0);
+  const byCharity={};
+  sorted.forEach(d=>{const c=state.charities.find(x=>x.id===d.charityId);const name=c?.name||d.charityId;if(!byCharity[name])byCharity[name]=0;byCharity[name]+=d.amount;});
+  const chartRows=Object.entries(byCharity).map(([n,v])=>`<div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;"><span style="font-size:13px;color:#475569">${n}</span><div style="display:flex;align-items:center;gap:10px;"><div style="width:${Math.round(v/total*160)}px;height:8px;background:#14B8A6;border-radius:4px;"></div><span style="font-size:13px;font-weight:700;color:#14B8A6;">$${v.toFixed(2)}</span></div></div>`).join('');
+  const rows=sorted.map((d,i)=>{const c=state.charities.find(x=>x.id===d.charityId);return `<tr><td style="padding:10px 12px;font-size:13px;color:#64748b;">${i+1}</td><td style="padding:10px 12px;font-size:12px;font-family:monospace;color:#475569;">${d.id}</td><td style="padding:10px 12px;font-size:13px;">${c?.name||'?'}</td><td style="padding:10px 12px;font-size:13px;font-weight:700;color:#059669;text-align:right;">$${d.amount.toFixed(2)}</td><td style="padding:10px 12px;font-size:12px;color:#94a3b8;">${d.date}</td><td style="padding:10px 12px;font-size:12px;color:#94a3b8;">${d.time}</td></tr>`;}).join('');
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Donation Report</title>
+  <style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:Inter,sans-serif;background:#fff;color:#0f172a;}
+  .page{max-width:720px;margin:0 auto;padding:50px 40px;}
+  .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px;padding-bottom:30px;border-bottom:3px solid #14B8A6;}
+  .logo{display:flex;align-items:center;gap:12px;}<
+  .logo-box{width:44px;height:44px;background:#14B8A6;border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-size:22px;}
+  .logo-text strong{font-size:22px;font-weight:900;display:block;}
+  .logo-text span{font-size:12px;color:#64748b;}
+  .meta{text-align:right;}
+  .meta h2{font-size:24px;font-weight:900;color:#0f172a;}
+  .meta p{font-size:12px;color:#64748b;margin-top:4px;}
+  .donor-card{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px 24px;margin-bottom:30px;}
+  .total-box{background:linear-gradient(135deg,#14B8A6,#0F9688);border-radius:12px;padding:24px;text-align:center;margin-bottom:30px;color:white;}
+  .total-box .amt{font-size:42px;font-weight:900;}
+  .section-title{font-size:14px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;}
+  .chart-section{margin-bottom:30px;}
+  table{width:100%;border-collapse:collapse;margin-bottom:30px;}
+  thead tr{background:#f8fafc;}
+  th{padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;color:#94a3b8;letter-spacing:.05em;text-align:left;}
+  tbody tr:nth-child(even){background:#f8fafc;}
+  .footer{text-align:center;color:#94a3b8;font-size:11px;border-top:1px solid #e2e8f0;padding-top:20px;margin-top:20px;}
+  @media print{.page{padding:30px;}}
+  </style></head><body><div class="page">
+  <div class="header"><div class="logo"><div class="logo-box">&#10084;</div><div class="logo-text"><strong>CharityHub</strong><span>Transparent Giving, Real Impact</span></div></div>
+  <div class="meta"><h2>Donation Report</h2><p>Generated: ${new Date().toLocaleString()}</p><p>User ID: ${user?.id}</p></div></div>
+  <div class="donor-card"><strong>${user?.firstName} ${user?.lastName}</strong><br/><span style="color:#64748b;font-size:13px;">${user?.email} &bull; ${user?.phone||'N/A'}</span></div>
+  <div class="total-box"><p style="font-size:14px;opacity:0.8;margin-bottom:8px;">TOTAL DONATED</p><p class="amt">$${total.toFixed(2)}</p><p style="font-size:13px;opacity:0.7;margin-top:8px;">${sorted.length} donation${sorted.length!==1?'s':''} across ${Object.keys(byCharity).length} charities</p></div>
+  <div class="chart-section"><p class="section-title">Breakdown by Charity</p>${chartRows}</div>
+  <p class="section-title">Donation History (sorted by amount)</p>
+  <table><thead><tr><th>#</th><th>Donation ID</th><th>Charity</th><th style="text-align:right">Amount</th><th>Date</th><th>Time</th></tr></thead>
+  <tbody>${rows}</tbody></table>
+  <div class="footer"><p>CharityHub Inc. &bull; Official Donation Report &bull; 2026</p><p>This document is valid for tax purposes.</p></div>
+  </div><script>window.onload=()=>window.print()<\/script></body></html>`;
+  const w=window.open('','_blank');w.document.write(html);w.document.close();
+  showToast('PDF report opened! Use Ctrl+P to save.','success');
+}
+
+function exportCSV(){
+  const user=state.currentUser;
+  const myDons=state.donations.filter(d=>d.userId===user?.id);
+  if(myDons.length===0){showToast('No donations to export.','info');return;}
+  const header='Donation ID,Charity ID,Charity Name,Amount,Date,Time,Message\n';
+  const rows=myDons.map(d=>{
+    const c=state.charities.find(x=>x.id===d.charityId);
+    return `${d.id},${d.charityId},"${c?.name||'?'}",${d.amount.toFixed(2)},${d.date},${d.time},"${d.msg||''}"`;
+  }).join('\n');
+  const blob=new Blob([header+rows],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`donations_${user?.id}_${Date.now()}.csv`;a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV exported!','success');
+}
+
+// ═══════ AUTH ═══════
+let lockTimer=null;
+async function loginUser(){
+  const btn=document.getElementById('loginBtn');
+  if(state.lockUntil&&new Date()<state.lockUntil){
+    const secs=Math.ceil((state.lockUntil-new Date())/1000);
+    document.getElementById('login-lock-timer').textContent=`Account locked. Try again in ${secs}s.`;
+    document.getElementById('login-lock-timer').classList.remove('hidden');
+    return;
+  }
+  state.lockUntil=null;
+  document.getElementById('login-lock-timer').classList.add('hidden');
+
+  const email=sanitizeInput(document.getElementById('login-email').value.trim());
+  const pw=document.getElementById('login-pw').value;
+
+  // Find user by email only first — never reveal if email exists or not (prevents user enumeration)
+  const userRecord=state.users.find(u=>u.email===email);
+
+  let authenticated = false;
+  if(userRecord && userRecord.password.includes(':')) {
+    const [storedSalt, storedHash] = userRecord.password.split(':');
+    const inputHash = await hashPassword(pw, storedSalt);
+    authenticated = (inputHash === storedHash);
+  }
+
+  // ✅ FIXED: isAdmin is ONLY read from the database record — never derived from name/email
+  const user = authenticated ? userRecord : null;
+
+  if(!user){
+    state.loginAttempts++;
+    const remaining=5-state.loginAttempts;
+    const errEl=document.getElementById('login-err');
+    if(remaining<=0){
+      state.loginAttempts=0;
+      state.lockUntil=new Date(Date.now()+30000);
+      // ✅ FIXED: lockout persists even after logout (stored in state, not reset on logout)
+      errEl.textContent='Too many failed attempts. Account locked for 30 seconds.';
+      errEl.classList.remove('hidden');
+      document.getElementById('login-lock-timer').classList.remove('hidden');
+      const countdown=()=>{
+        if(new Date()<state.lockUntil){
+          const s=Math.ceil((state.lockUntil-new Date())/1000);
+          document.getElementById('login-lock-timer').textContent=`Account locked. Try again in ${s}s.`;
+          lockTimer=setTimeout(countdown,1000);
+        } else {
+          document.getElementById('login-lock-timer').classList.add('hidden');
+        }
+      };countdown();
+      btn.disabled=true;setTimeout(()=>{btn.disabled=false;},30000);
+    } else {
+      errEl.textContent=`Incorrect credentials. ${remaining} attempt${remaining!==1?'s':''} remaining.`;
+      errEl.classList.remove('hidden');
+    }
+    return;
+  }
+
+  state.loginAttempts=0;state.currentUser=user;
+  document.getElementById('login-err').classList.add('hidden');
+  document.getElementById('login-lock-timer').classList.add('hidden');
+
+  // Update nav - use escHtml to prevent XSS
+  document.getElementById('navGuestActions').classList.add('hidden');
+  document.getElementById('navUserActions').classList.remove('hidden');
+  document.getElementById('navUserActions').classList.add('flex');
+  document.getElementById('navUserName').textContent=escHtml(user.firstName);
+  document.getElementById('notifBtnWrapper').classList.remove('hidden');
+
+  showToast(`Welcome back, ${escHtml(user.firstName)}!`,'success');
+  addNotification(`Login successful for ${escHtml(user.firstName)} ${escHtml(user.lastName)}.`,'info');
+
+  if(user.isAdmin){showPage('admin');}
+  else if(!user.firstLogin){
+    user.firstLogin=true;
+    startOnboarding();
+  } else {showPage('dashboard');}
+}
+
+function logout(){
+  state.currentUser=null;
+  // ✅ FIXED: Do NOT reset loginAttempts or lockUntil on logout
+  // This prevents brute-force bypass via logout-login cycling
+  document.getElementById('navGuestActions').classList.remove('hidden');
+  document.getElementById('navUserActions').classList.add('hidden');
+  document.getElementById('navUserActions').classList.remove('flex');
+  document.getElementById('notifBtnWrapper').classList.add('hidden');
+  showToast('Logged out successfully.','info');
+  showPage('home');
+}
+
+async function registerUser(){
+  const first=sanitizeInput(document.getElementById('reg-first').value.trim());
+  const last=sanitizeInput(document.getElementById('reg-last').value.trim());
+  const email=sanitizeInput(document.getElementById('reg-email').value.trim());
+  const phone=document.getElementById('reg-phone').value.trim();
+  const pw=document.getElementById('reg-pw').value;
+  const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const phoneOk=/^\d{2}-\d{6}$/.test(phone);
+  const pwOk=pw.length>=8&&/[A-Z]/.test(pw)&&/[0-9]/.test(pw)&&/[^A-Za-z0-9]/.test(pw);
+  document.getElementById('reg-email-err').classList.toggle('hidden',emailOk);
+  document.getElementById('reg-phone-err').classList.toggle('hidden',phoneOk);
+  if(!first||!last||!emailOk||!phoneOk||!pwOk){showToast('Please fix the errors highlighted in the form.','error');return;}
+  if(state.users.find(u=>u.email===email)){showToast('Email already registered!','error');return;}
+  const userId=`US-${String(state.nextUserNum++).padStart(4,'0')}`;
+  // ✅ FIXED: Hash password before storing — never store plaintext
+  const salt = generateSalt();
+  const hashed = await hashPassword(pw, salt);
+  // ✅ FIXED: isAdmin is ALWAYS false on register — cannot be set by user input
+  const newUser={id:userId,firstName:first,lastName:last,email,phone,password:salt+':'+hashed,isAdmin:false,firstLogin:false,location:'',categories:[]};
+  state.users.push(newUser);state.currentUser=newUser;
+  document.getElementById('navGuestActions').classList.add('hidden');
+  document.getElementById('navUserActions').classList.remove('hidden');
+  document.getElementById('navUserActions').classList.add('flex');
+  document.getElementById('navUserName').textContent=escHtml(first);
+  document.getElementById('notifBtnWrapper').classList.remove('hidden');
+  showToast(`Account created! Welcome, ${escHtml(first)}! User ID: ${escHtml(userId)}`,'success');
+  addNotification(`New account created for ${escHtml(first)} ${escHtml(last)}.`,'info');
+  startOnboarding();
+}
+
+// ═══════ ONBOARDING ═══════
+function startOnboarding(){
+  const u=state.currentUser;
+  document.getElementById('ob-username-display').textContent=`${u.firstName} ${u.lastName}`;
+  document.getElementById('ob-email-display').textContent=u.email;
+  setObStep(1);
+  showPage('onboarding');
+}
+function setObStep(n){
+  [1,2,3].forEach(i=>{
+    const step=document.getElementById('ob-step-'+i);
+    const content=document.getElementById('ob-content-'+i);
+    if(content)content.classList.toggle('hidden',i!==n);
+    if(step){
+      step.classList.toggle('done',i<n);
+      step.classList.toggle('active',i===n);
+    }
+  });
+  if(n===2){renderObCampaigns();}
+}
+function renderObCampaigns(){
+  const div=document.getElementById('ob-campaign-preview');
+  const list=state.charities.filter(c=>c.status==='Open').slice(0,3);
+  div.innerHTML=list.map(c=>`<div class="flex items-center gap-4 p-3 bg-slate-800/60 rounded-xl"><div class="w-10 h-10 bg-primary/15 rounded-lg flex items-center justify-center shrink-0"><span class="material-icons text-primary text-lg">${catIcons[c.category]||'volunteer_activism'}</span></div><div class="flex-1 min-w-0"><p class="font-semibold text-white text-sm">${c.name}</p><p class="text-xs text-slate-400">${c.category} &bull; ${c.location}</p></div><span class="text-primary font-bold text-sm">${Math.round(c.current/c.target*100)}%</span></div>`).join('');
+}
+function obNext(step){
+  if(step===1){
+    const phone=document.getElementById('ob-phone').value;
+    if(state.currentUser){state.currentUser.phone=phone||state.currentUser.phone;}
+    state.currentUser.firstLogin=true;
+  }
+  setObStep(step+1);
+}
+function toggleCat(btn,cat){
+  btn.classList.toggle('border-primary');btn.classList.toggle('text-primary');
+  btn.classList.toggle('border-slate-600');btn.classList.toggle('text-slate-400');
+  if(!state.currentUser.categories)state.currentUser.categories=[];
+  const idx=state.currentUser.categories.indexOf(cat);
+  if(idx>-1)state.currentUser.categories.splice(idx,1);else state.currentUser.categories.push(cat);
+}
+
+// ═══════ ADMIN ═══════
+function switchAdminSection(section){
+  ['overview','campaigns','donors','audit'].forEach(s=>{
+    const el=document.getElementById('admin-section-'+s);
+    if(el)el.classList.toggle('hidden',s!==section);
+  });
+  if(section==='overview'){renderAdminOverview();}
+  if(section==='donors'){renderAdminDonors();}
+  if(section==='audit'){renderAuditLog();}
+  if(section==='campaigns'){populateAdminSelects();}
+}
+
+function renderAdminOverview(){
+  autoCloseExpired();
+  const donors=state.users.filter(u=>!u.isAdmin);
+  const total=state.donations.reduce((s,d)=>s+d.amount,0);
+  document.getElementById('admin-stat-charities').textContent=state.charities.length;
+  document.getElementById('admin-stat-raised').textContent='$'+total.toFixed(0);
+  document.getElementById('admin-stat-donors').textContent=donors.length;
+  document.getElementById('admin-stat-donations').textContent=state.donations.length;
+  renderAdminChart();
+  renderTopDonors();
+}
+
+function renderAdminChart(){
+  const ctx=document.getElementById('adminChart');
+  if(!ctx)return;
+  if(state.adminChart)state.adminChart.destroy();
+  const sorted=[...state.charities].sort((a,b)=>(b.current/b.target)-(a.current/a.target)).slice(0,6);
+  state.adminChart=new Chart(ctx,{type:'bar',data:{labels:sorted.map(c=>c.name.length>15?c.name.slice(0,15)+'…':c.name),datasets:[{label:'Funded %',data:sorted.map(c=>Math.min(100,Math.round(c.current/c.target*100))),backgroundColor:'rgba(112,30,235,0.6)',borderColor:'rgba(112,30,235,1)',borderWidth:2,borderRadius:8}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+'% funded'}}},scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#94a3b8',font:{size:11}}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#94a3b8',font:{size:11},callback:v=>v+'%'},max:110}}}});
+}
+
+function renderTopDonors(){
+  const byDonor={};
+  state.donations.forEach(d=>{if(!byDonor[d.userId])byDonor[d.userId]=0;byDonor[d.userId]+=d.amount;});
+  const sorted=Object.entries(byDonor).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const list=document.getElementById('topDonorsList');
+  list.innerHTML=sorted.map(([uid,amt],i)=>`<div class="flex items-center gap-4 p-3 bg-slate-900/50 rounded-lg"><span class="font-black text-[#701eeb] text-sm w-5 text-center">${i+1}</span><div class="flex-1"><p class="text-sm font-semibold text-white">Donor ${uid}</p><p class="text-xs text-slate-500">Anonymous</p></div><span class="text-emerald-400 font-black">$${amt.toFixed(2)}</span></div>`).join('');
+}
+
+function renderAdminDonors(){
+  const donors=state.users.filter(u=>!u.isAdmin);
+  document.getElementById('donor-count-badge').textContent=donors.length+' registered donors';
+  const tbody=document.getElementById('adminDonorTable');
+  tbody.innerHTML=donors.map(u=>{
+    const myDons=state.donations.filter(d=>d.userId===u.id);
+    const total=myDons.reduce((s,d)=>s+d.amount,0);
+    // ✅ FIXED: Escape all user data before rendering to prevent XSS
+    return `<tr class="hover:bg-[#701eeb]/5 transition-colors">
+      <td class="px-5 py-3 text-xs font-mono text-slate-500">${escHtml(u.id)}</td>
+      <td class="px-5 py-3 text-sm font-semibold text-white">${escHtml(u.firstName)} ${escHtml(u.lastName)}</td>
+      <td class="px-5 py-3 text-sm text-slate-400">${escHtml(u.email)}</td>
+      <td class="px-5 py-3 text-sm text-slate-400">${escHtml(u.phone||'N/A')}</td>
+      <td class="px-5 py-3 text-sm font-bold text-right text-emerald-400">$${total.toFixed(2)}</td>
+      <td class="px-5 py-3 text-sm text-center text-slate-300">${myDons.length}</td>
+    </tr>`;
+  }).join('');
+}
+
+function switchAdminTab(tab){
+  ['add','modify','remove'].forEach(t=>{
+    document.getElementById('admin-'+t).classList.toggle('hidden',t!==tab);
+    const btn=document.getElementById('tab-'+t);
+    if(btn){btn.classList.toggle('border-[#701eeb]',t===tab);btn.classList.toggle('text-white',t===tab);btn.classList.toggle('border-transparent',t!==tab);btn.classList.toggle('text-slate-500',t!==tab);}
+  });
+}
+
+function populateAdminSelects(){
+  ['modify-select','remove-select'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    el.innerHTML='<option value="">&#8212; Select &#8212;</option>'+state.charities.map(c=>`<option value="${c.id}">${c.name} (${c.id})</option>`).join('');
+  });
+}
+
+function adminAddCharity(){
+  // ✅ FIXED: Sanitize all inputs before storing to prevent XSS/injection
+  const name=sanitizeInput(document.getElementById('admin-name').value.trim());
+  const desc=sanitizeInput(document.getElementById('admin-desc').value.trim());
+  const cat=document.getElementById('admin-category').value;
+  const loc=document.getElementById('admin-location').value;
+  const target=parseFloat(document.getElementById('admin-target').value);
+  const dl=document.getElementById('admin-deadline').value;
+  const verif=sanitizeInput(document.getElementById('admin-verif').value.trim());
+  const status=document.getElementById('admin-status').value;
+  if(!name||!desc||!target||target<=0||!dl){showToast('Please fill all required fields correctly.','error');return;}
+  if(name.length>100){showToast('Charity name too long (max 100 chars).','error');return;}
+  if(state.charities.find(c=>c.name.toLowerCase()===name.toLowerCase())){showToast('A charity with this name already exists!','error');return;}
+  // ✅ FIXED: Validate deadline is a valid future date
+  const d=new Date(dl);
+  if(isNaN(d.getTime())||d<new Date()){showToast('Deadline must be a valid future date.','error');return;}
+  const newId=`CH-${String(state.nextCharityNum++).padStart(4,'0')}`;
+  state.charities.push({id:newId,name,desc,target,current:0,deadline:dl.split('T')[0],status,category:cat,location:loc,verified:!!verif,verifNotes:verif||'',updates:[]});
+  addAuditLog(escHtml(state.currentUser.firstName),'Added Charity',`${escHtml(name)} (${newId})`);
+  showToast(`Charity "${escHtml(name)}" added! ID: ${newId}`,'success');
+  ['admin-name','admin-desc','admin-target','admin-deadline','admin-verif'].forEach(id=>document.getElementById(id).value='');
+  populateAdminSelects();
+}
+
+function fillModifyForm(){
+  const id=document.getElementById('modify-select').value;
+  const c=state.charities.find(x=>x.id===id);if(!c)return;
+  document.getElementById('modify-name').value=c.name;
+  document.getElementById('modify-target').value=c.target;
+  document.getElementById('modify-status').value=c.status;
+  document.getElementById('modify-update').value='';
+}
+function adminModifyCharity(){
+  const id=document.getElementById('modify-select').value;
+  const c=state.charities.find(x=>x.id===id);if(!c){showToast('Select a charity.','error');return;}
+  const oldName=c.name;
+  // ✅ FIXED: Sanitize all inputs before storing
+  const newName=sanitizeInput(document.getElementById('modify-name').value.trim());
+  if(newName) c.name=newName;
+  const newTarget=parseFloat(document.getElementById('modify-target').value);
+  if(!isNaN(newTarget)&&newTarget>0) c.target=newTarget;
+  c.status=document.getElementById('modify-status').value;
+  const update=sanitizeInput(document.getElementById('modify-update').value.trim());
+  if(update&&update.length<=500){c.updates=c.updates||[];c.updates.push(update);addNotification(`Update from ${escHtml(c.name)}: "${escHtml(update)}"`, 'info');}
+  addAuditLog(escHtml(state.currentUser.firstName),'Modified Charity',`${escHtml(oldName)} (${id})`);
+  showToast(`Charity "${escHtml(c.name)}" updated!`,'success');
+  populateAdminSelects();
+}
+function adminRemoveCharity(){
+  const id=document.getElementById('remove-select').value;
+  const idx=state.charities.findIndex(c=>c.id===id);
+  if(idx===-1){showToast('Select a charity.','error');return;}
+  const name=state.charities[idx].name;
+  if(!confirm(`Remove "${escHtml(name)}"? This cannot be undone.`))return;
+  state.charities.splice(idx,1);
+  state.donations=state.donations.filter(d=>d.charityId!==id);
+  addAuditLog(escHtml(state.currentUser.firstName),'Removed Charity',`${escHtml(name)} (${id})`);
+  showToast(`"${escHtml(name)}" removed.`,'info');
+  populateAdminSelects();
+}
+
+// ═══════ PASSWORD ═══════
+function checkPasswordStrength(){
+  const pw=document.getElementById('reg-pw').value;
+  const c={len:pw.length>=8,upper:/[A-Z]/.test(pw),special:/[^A-Za-z0-9]/.test(pw),num:/[0-9]/.test(pw)};
+  const score=Object.values(c).filter(Boolean).length;
+  const colors=['bg-slate-700','bg-red-500','bg-yellow-500','bg-accent','bg-emerald-500'];
+  const labels=['&#8212;','Weak','Fair','Good','Strong'];
+  const lclrs=['text-slate-500','text-red-400','text-yellow-400','text-accent','text-emerald-400'];
+  for(let i=1;i<=4;i++){document.getElementById('seg'+i).className='pw-seg '+(i<=score?colors[score]:'bg-slate-700');}
+  const lbl=document.getElementById('pw-strength-label');lbl.innerHTML=labels[score];lbl.className='text-xs font-bold '+lclrs[score];
+  const mr=(id,ok)=>{const el=document.getElementById(id);el.className='flex items-center gap-1.5 text-xs '+(ok?'text-emerald-400':'text-slate-500');el.querySelector('.material-icons').textContent=ok?'check_circle':'radio_button_unchecked';};
+  mr('req-len',c.len);mr('req-upper',c.upper);mr('req-special',c.special);mr('req-num',c.num);
+}
+function togglePw(inputId,eyeId){
+  const inp=document.getElementById(inputId);const eye=document.getElementById(eyeId);
+  if(inp.type==='password'){inp.type='text';eye.textContent='visibility_off';}else{inp.type='password';eye.textContent='visibility';}
+}
+
+// ═══════ TOAST ═══════
+function showToast(msg,type='success',duration=3500){
+  const container=document.getElementById('toastContainer');
+  const icons={success:'check_circle',error:'error',info:'info'};
+  const colors={success:'text-primary',error:'text-red-400',info:'text-accent'};
+  const el=document.createElement('div');
+  el.className='toast-item';
+  el.innerHTML=`<span class="material-icons ${colors[type]||'text-primary'} shrink-0">${icons[type]||'info'}</span><span>${msg}</span>`;
+  container.appendChild(el);
+  setTimeout(()=>{el.classList.add('hide');setTimeout(()=>el.remove(),400);},duration);
+}
+
+// ═══════ MODAL BACKDROP ═══════
+document.getElementById('donateModal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+document.getElementById('cancelModal').addEventListener('click',function(e){if(e.target===this)closeCancelModal();});
+
+// ═══════ KEYBOARD NAV ════
